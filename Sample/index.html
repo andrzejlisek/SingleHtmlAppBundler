@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bundler test page</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="UTF-8"> 
+  </head>
+  <body background="media/back.png" bgcolor="#c0c0c0">
+    <h1>Script</h1>
+    
+    <!-- Numbers -->
+    <span class="C1">Number 1</span><input type="text" size="4" id="Num1" value="3"><br>
+    <span class="C2">Number 2</span><input type="text" size="4" id="Num2" value="2"><br>
+    
+    <!-- Actions and results -->
+    <button onclick="AddSub()">Add, subtract (standard call)</button> <span class="C3" id="NumResult1"></span><br>
+    <button onclick="MulDiv()">Multiply, divide (call via Worker)</button> <span class="C3" id="NumResult2"></span><br>
+    
+    <!-- Scripts -->
+    <script src="app1.js"></script>
+    <script src="app2.js"></script>
+
+    <h1>Iframe and multimedia</h1>
+    Source of media files: <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element">MDN</a>
+    
+    <h2>Dedicated tag</h2>
+    <iframe src="frame.html" width="300" height="200"></iframe>
+    <img src="media/picture.jpg" width="300" height="200">
+    <audio src="media/sound.mp3" width="300" height="200" controls></audio> 
+    <video src="media/movie.mp4" width="300" height="200" controls></video>     
+
+    <h3>Audio and video with source tag</h3>
+    <audio width="300" height="200" controls><source src="media/sound.mp3" type="audio/mp3"></audio> 
+    <video width="300" height="200" controls><source src="media/movie.mp4" type="video/mp4"></video>     
+
+    <h3>Video with subtitles</h3>
+    <video controls src="media/subtitles.mp4" width="400" height="300">
+      <track default kind="captions" srclang="en" src="media/subtitles.vtt">
+    </video>
+
+    <h3>Picture</h3>
+    <picture>
+      <source srcset="media/pictureset.jpg">
+      <img src="media/picture.jpg" width="300" height="200">
+    </picture>
+
+    <h2>Object tag</h2>
+    <object data="frame.html" width="300" height="200"></object>  
+    <object data="media/picture.jpg" width="300" height="200"></object>
+    <object data="media/sound.mp3" width="300" height="200"></object>
+    <object data="media/movie.mp4" width="300" height="200"></object>
+    
+    <h2>Embed tag</h2>
+    <embed type="text/html" src="frame.html" width="300" height="200">
+    <embed type="image/jpg" src="media/picture.jpg" width="300" height="200">
+    <embed type="audio/mp3" src="media/sound.mp3" width="300" height="200">
+    <embed type="video/mp4" src="media/movie.mp4" width="300" height="200">
+    
+  </body>
+</html>
+
