@@ -102,7 +102,7 @@ namespace SingleHtmlAppBundler
                 }
                 Raw = Raw_;
             }
-            return Core.WorkEncodingI.GetString(Raw);
+            return CodePreparation.Prepare(FileName, Core.WorkEncodingI.GetString(Raw));
         }
 
         public static int FileMimeTypeNum(string FileName)
@@ -117,11 +117,20 @@ namespace SingleHtmlAppBundler
         public static string FileMimeType(string FileName)
         {
             // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+            string T = "*";
             if (MimeTypeString.ContainsKey(FileExt(FileName)))
             {
-                return MimeTypeString[FileExt(FileName)];
+                T = MimeTypeString[FileExt(FileName)];
             }
-            return MimeTypeString["*"];
+
+            if ("*".Equals(T))
+            {
+                return HtmlAgilityPack.HtmlWeb.GetContentTypeForExtension(FileExt(FileName),  MimeTypeString["*"]);
+            }
+            else
+            {
+                return T;
+            }
         }
 
         static Dictionary<string, string> MimeTypeString = new Dictionary<string, string>();

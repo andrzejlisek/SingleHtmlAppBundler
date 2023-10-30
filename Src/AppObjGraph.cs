@@ -6,9 +6,9 @@ namespace SingleHtmlAppBundler
     {
         byte[] RawX;
 
-        public AppObjGraph(string FileName_, AppObj Parent_) : base(FileName_, Parent_)
+        public AppObjGraph(string TagInfo_, int Depth_, string FileName_, string Raw_, AppObj Parent_) : base(TagInfo_, Depth_, FileName_, Raw_, Parent_)
         {
-            RawX = CoreFile.GetFile(FileName_);
+            RawX = CoreFile.GetFile(Raw_);
         }
 
         public override string GetProcessedRaw()

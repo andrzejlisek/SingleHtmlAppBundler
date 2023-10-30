@@ -38,29 +38,30 @@ namespace SingleHtmlAppBundler
             ExceptionScript.Add("style");
         }
 
-        public AppObjHtml(string FileName_, AppObj Parent_) : base(FileName_, Parent_)
+        public AppObjHtml(string TagInfo_, int Depth_, string FileName_, string Raw_, AppObj Parent_) : base(TagInfo_, Depth_, FileName_, Raw_, Parent_)
         {
         }
 
         List<HtmlNode> ChildNode = new List<HtmlNode>();
 
-        public override void Parse(int Depth, string Name)
+        public override void Parse()
         {
-            base.Parse(Depth, Name);
+            base.Parse();
             HDoc = new HtmlDocument();
             HDoc.LoadHtml(Raw);
-            ParseWork(Depth, HDoc.DocumentNode, 0);
+            ParseWork(HDoc.DocumentNode, 0);
         }
 
-        void ParseWork(int Depth, HtmlAgilityPack.HtmlNode N, int TextMode)
+        void ParseWork(HtmlAgilityPack.HtmlNode N, int TextMode)
         {
             string NodeFileName = null;
+            string TagName = "???";
             switch (N.NodeType)
             {
                 case HtmlAgilityPack.HtmlNodeType.Document:
                     for (int i = 0; i < N.ChildNodes.Count; i++)
                     {
-                        ParseWork(Depth, N.ChildNodes[i], 0);
+                        ParseWork(N.ChildNodes[i], 0);
                     }
                     break;
                 case HtmlAgilityPack.HtmlNodeType.Element:
@@ -79,10 +80,12 @@ namespace SingleHtmlAppBundler
                                 if ((N.Attributes["srcset"] != null) && (N.Attributes["src"] == null))
                                 {
                                     NodeFileName = N.Attributes["srcset"].Value;
+                                    TagName = N.Name.ToLowerInvariant();
                                 }
                                 if (N.Attributes["src"] != null)
                                 {
                                     NodeFileName = N.Attributes["src"].Value;
+                                    TagName = N.Name.ToLowerInvariant();
                                 }
                             }
                             break;
@@ -91,6 +94,7 @@ namespace SingleHtmlAppBundler
                                 if (N.Attributes["background"] != null)
                                 {
                                     NodeFileName = N.Attributes["background"].Value;
+                                    TagName = N.Name.ToLowerInvariant();
                                 }
                             }
                             break;
@@ -99,6 +103,7 @@ namespace SingleHtmlAppBundler
                                 if ((N.Attributes["rel"] != null) && (N.Attributes["href"] != null))
                                 {
                                     NodeFileName = N.Attributes["href"].Value;
+                                    TagName = N.Name.ToLowerInvariant();
                                 }
                             }
                             break;
@@ -107,20 +112,10 @@ namespace SingleHtmlAppBundler
                                 if (N.Attributes["data"] != null)
                                 {
                                     NodeFileName = N.Attributes["data"].Value;
+                                    TagName = N.Name.ToLowerInvariant();
                                 }
                             }
                             break;
-                    }
-
-                    if (!ExceptionSingleTag.Contains(N.Name.ToLowerInvariant()))
-                    {
-                        if (N.HasChildNodes)
-                        {
-                            for (int i = 0; i < N.ChildNodes.Count; i++)
-                            {
-                                ParseWork(Depth, N.ChildNodes[i], 0);
-                            }
-                        }
                     }
                     break;
                 case HtmlAgilityPack.HtmlNodeType.Text:
@@ -148,11 +143,12 @@ namespace SingleHtmlAppBundler
                             {
                                 if ((Txt != null) && (Txt.Trim() != ""))
                                 {
-                                    AppObj AppObj_ = new AppObjJS(Txt, null);
+                                    TagName = N.ParentNode.Name;
+                                    AppObj AppObj_ = new AppObjJS("HTML:" + TagName, Depth + 1, "", Txt, null);
                                     Child.Add(AppObj_);
                                     ChildName.Add(null);
                                     ChildNode.Add(N);
-                                    AppObj_.Parse(Depth + 1, null);
+                                    AppObj_.Parse();
                                 }
                             }
                             break;
@@ -162,35 +158,30 @@ namespace SingleHtmlAppBundler
                     break;
             }
 
-            switch (CoreFile.ValidFileName(Core.BaseDirI, NodeFileName))
+            if (CoreFile.ValidFileName(Core.BaseDirI, NodeFileName) >= 0)
             {
-                case 0: // Binary
+                AppObj AppObj_ = CreateAppObj("HTML:" + TagName, Depth + 1, Core.BaseDirI, NodeFileName, this);
+                if (AppObj_ != null)
+                {
+                    Child.Add(AppObj_);
+                    ChildName.Add(NodeFileName);
+                    ChildNode.Add(N);
+                    AppObj_.Parse();
+                }
+            }
+
+            if (N.NodeType == HtmlNodeType.Element)
+            {
+                if (!ExceptionSingleTag.Contains(N.Name.ToLowerInvariant()))
+                {
+                    if (N.HasChildNodes)
                     {
-                        AppObj AppObj_ = new AppObjGraph(CoreFile.FilePath(Core.BaseDirI, NodeFileName), this);
-                        Child.Add(AppObj_);
-                        ChildName.Add(NodeFileName);
-                        ChildNode.Add(N);
-                        AppObj_.Parse(Depth + 1, NodeFileName);
+                        for (int i = 0; i < N.ChildNodes.Count; i++)
+                        {
+                            ParseWork(N.ChildNodes[i], 0);
+                        }
                     }
-                    break;
-                case 1: // HTML
-                    {
-                        AppObj AppObj_ = new AppObjHtml(CoreFile.GetFileS(Core.BaseDirI, NodeFileName), this);
-                        Child.Add(AppObj_);
-                        ChildName.Add(NodeFileName);
-                        ChildNode.Add(N);
-                        AppObj_.Parse(Depth + 1, NodeFileName);
-                    }
-                    break;
-                case 2: // JS, CSS
-                    {
-                        AppObj AppObj_ = new AppObjJS(CoreFile.GetFileS(Core.BaseDirI, NodeFileName), this);
-                        Child.Add(AppObj_);
-                        ChildName.Add(NodeFileName);
-                        ChildNode.Add(N);
-                        AppObj_.Parse(Depth + 1, NodeFileName);
-                    }
-                    break;
+                }
             }
         }
 
@@ -203,7 +194,7 @@ namespace SingleHtmlAppBundler
         }
 
 
-        public override void TreeOperationData(int Depth)
+        public override void TreeOperationData()
         {
             for (int I = 0; I < Child.Count; I++)
             {

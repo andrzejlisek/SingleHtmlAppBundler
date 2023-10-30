@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Principal;
 using System.Text;
 
 namespace SingleHtmlAppBundler
@@ -14,10 +15,17 @@ namespace SingleHtmlAppBundler
         string ScriptCharsOperatorRegEx = ",=({[!+-*/|&%^?<>";
         string ScriptCharsOperatorOther = ".:;)}]";
 
-        public AppObjJS(string FileName_, AppObj Parent_) : base(FileName_, Parent_)
+        public AppObjJS(string TagInfo_, int Depth_, string FileName_, string Raw_, AppObj Parent_) : base(TagInfo_, Depth_, FileName_, Raw_, Parent_)
         {
 
         }
+
+        const string FetchPar1 = "_fetch_rsv_";
+        const string FetchPar2 = "_fetch_rej_";
+
+        const string FetchVar1 = "_fetch_a_";
+        const string FetchVar2 = "_fetch_c_";
+        const string FetchVar3 = "_fetch_i_";
 
         enum TokenTypeDef { Blank, Whitespace, ValueNum,
             ValueQ1, ValueQ2, ValueQ3,
@@ -36,7 +44,7 @@ namespace SingleHtmlAppBundler
         List<int> TokenWorkN = new List<int>();
 
 
-        public override void TreeOperationData(int Depth)
+        public override void TreeOperationData()
         {
             for (int I = 0; I < Child.Count; I++)
             {
@@ -51,58 +59,101 @@ namespace SingleHtmlAppBundler
                         break;
                     case "Worker":
                         {
-                            if (Core.BundleJS_Worker)
+                            if ((Core.BundleJS_Worker == 1) || (Core.BundleJS_Worker == 2))
                             {
+                                // 1 - Additional function in child file
+                                // 2 - Embedded Worker as function
+                                // 3 - Embedded Worker as raw text
+                                // 4 - Embed Worker as BASE64
+                                int JSWorkerBundleMode = 3;
+
+                                if (Core.BundleJS_Worker == 2)
+                                {
+                                    JSWorkerBundleMode = 4;
+                                }
+
                                 string ObjId = GlobalId.NewId(ChildName[I], true);
 
                                 TokenPos++;
-                                while ((TokenT[TokenPos] == TokenTypeDef.Whitespace) || (TokenT[TokenPos] == TokenTypeDef.Operator))
+                                while ((TokenT[TokenPos] == TokenTypeDef.Whitespace) || (TokenT[TokenPos] == TokenTypeDef.Operator) || (TokenT[TokenPos] == TokenTypeDef.Comment1) || (TokenT[TokenPos] == TokenTypeDef.Comment2))
                                 {
                                     TokenPos++;
                                 }
 
                                 TokenRem(TokenPos);
                                 InsPos = TokenPos;
-                                TokenIns(InsPos, "URL", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "createObjectURL", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "new", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
-                                TokenIns(InsPos, "Blob", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "[", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "\"(\"", TokenTypeDef.ValueQ2); InsPos++;
-                                TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "toString", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "\")()\"", TokenTypeDef.ValueQ2); InsPos++;
-                                TokenIns(InsPos, "]", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, ",", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "type", TokenTypeDef.Identifier); InsPos++;
-                                TokenIns(InsPos, ":", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, "\"text/javascript\"", TokenTypeDef.ValueQ2); InsPos++;
-                                TokenIns(InsPos, "}", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
+                                if (JSWorkerBundleMode == 4)
+                                {
+                                    string ChildCode = ((AppObjJS)Child[I]).GetProcessedRaw();
+                                    TokenIns(InsPos, "\"data:text/javascript;base64," + Convert.ToBase64String(Core.WorkEncodingO.GetBytes(ChildCode)) + "\""); InsPos++;
+                                }
+                                if (JSWorkerBundleMode <= 3)
+                                {
+                                    TokenIns(InsPos, "URL", TokenTypeDef.Identifier); InsPos++;
+                                    TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "createObjectURL", TokenTypeDef.Identifier); InsPos++;
+                                    TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "new", TokenTypeDef.Identifier); InsPos++;
+                                    TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
+                                    TokenIns(InsPos, "Blob", TokenTypeDef.Identifier); InsPos++;
+                                    TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "[", TokenTypeDef.Operator); InsPos++;
+                                    if (JSWorkerBundleMode == 3)
+                                    {
+                                        string ChildCode = CodeToString(((AppObjJS)Child[I]).GetProcessedRaw());
+                                        TokenIns(InsPos, "\"" + ChildCode + "\""); InsPos++;
+                                    }
+                                    if (JSWorkerBundleMode < 3)
+                                    {
+                                        TokenIns(InsPos, "\"(\"", TokenTypeDef.ValueQ2); InsPos++;
+                                        TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
+                                        if (JSWorkerBundleMode == 1)
+                                        {
+                                            TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
+                                        }
+                                        if (JSWorkerBundleMode == 2)
+                                        {
+                                            AppObjJS ChildJS = ((AppObjJS)Child[I]);
+                                            TokenIns(InsPos, "function"); InsPos++;
+                                            TokenIns(InsPos, "("); InsPos++;
+                                            TokenIns(InsPos, ")"); InsPos++;
+                                            TokenIns(InsPos, "{"); InsPos++;
+                                            TokenIns(InsPos, ChildJS.TokenV, ChildJS.TokenT); InsPos += ChildJS.TokenV.Count;
+                                            TokenIns(InsPos, "}"); InsPos++;
+                                        }
+                                        TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
+                                        TokenIns(InsPos, "toString", TokenTypeDef.Identifier); InsPos++;
+                                        TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
+                                        TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
+                                        TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
+                                        TokenIns(InsPos, "\")()\"", TokenTypeDef.ValueQ2); InsPos++;
+                                    }
+                                    TokenIns(InsPos, "]", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, ",", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "type", TokenTypeDef.Identifier); InsPos++;
+                                    TokenIns(InsPos, ":", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, "\"text/javascript\"", TokenTypeDef.ValueQ2); InsPos++;
+                                    TokenIns(InsPos, "}", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
+                                }
 
+                                if (JSWorkerBundleMode == 1)
+                                {
+                                    InsPos = 0;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "function", TokenTypeDef.Identifier); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenAdd("\n", TokenTypeDef.Whitespace); InsPos++;
+                                    ((AppObjJS)Child[I]).TokenAdd("}", TokenTypeDef.Operator); InsPos++;
 
-                                InsPos = 0;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, "function", TokenTypeDef.Identifier); InsPos++;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                ((AppObjJS)Child[I]).TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
-                                ((AppObjJS)Child[I]).TokenAdd("\n", TokenTypeDef.Whitespace); InsPos++;
-                                ((AppObjJS)Child[I]).TokenAdd("}", TokenTypeDef.Operator); InsPos++;
+                                    TokenIns(0, ((AppObjJS)Child[I]).TokenV, ((AppObjJS)Child[I]).TokenT);
+                                }
 
-                                TokenIns(0, ((AppObjJS)Child[I]).TokenV, ((AppObjJS)Child[I]).TokenT);
                                 Child[I].IsBundled = true;
                             }
                         }
@@ -122,14 +173,163 @@ namespace SingleHtmlAppBundler
                             }
                         }
                         break;
+                    case "fetch":
+                        {
+                            if ((Core.BundleJS_Fetch == 1) || (Core.BundleJS_Fetch == 2))
+                            {
+                                // 1 - replace fetch into building function
+                                // 2 - set BASE64 data as URL
+                                int JSFetchBundleMode = 2;
+
+                                if (Core.BundleJS_Fetch == 2)
+                                {
+                                    JSFetchBundleMode = 1;
+                                }
+
+                                string RawBase64 = ((AppObjGraph)Child[I]).GetProcessedRaw();
+
+                                if (JSFetchBundleMode == 2)
+                                {
+                                    InsPos = TokenPos;
+                                    while (TokenV[InsPos] != ")")
+                                    {
+                                        if ((TokenT[InsPos] == TokenTypeDef.ValueQ1) || (TokenT[InsPos] == TokenTypeDef.ValueQ2))
+                                        {
+                                            TokenRem(InsPos);
+                                            TokenIns(InsPos, "\"" + RawBase64 + "\"");
+                                            break;
+                                        }
+                                        InsPos++;
+                                    }
+                                }
+
+
+                                if (JSFetchBundleMode == 1)
+                                {
+                                    TokenRem(TokenPos);
+                                    TokenPos++;
+                                    while (TokenV[TokenPos] != ")")
+                                    {
+                                        TokenRem(TokenPos);
+                                    }
+
+                                    RawBase64 = RawBase64.Substring(RawBase64.IndexOf(";base64,") + 8);
+
+                                    InsPos = TokenPos;
+
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Promise"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, FetchPar1); InsPos++;
+                                    TokenIns(InsPos, ","); InsPos++;
+                                    TokenIns(InsPos, FetchPar2); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, "="); InsPos++;
+                                    TokenIns(InsPos, ">"); InsPos++;
+                                    TokenIns(InsPos, "{"); InsPos++;
+
+                                    TokenIns(InsPos, "let"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, FetchVar2); InsPos++;
+                                    TokenIns(InsPos, "="); InsPos++;
+                                    TokenIns(InsPos, "atob"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "\"" + RawBase64 + "\""); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+                                    TokenIns(InsPos, "const"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, FetchVar1); InsPos++;
+                                    TokenIns(InsPos, "="); InsPos++;
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Array"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, FetchVar2); InsPos++;
+                                    TokenIns(InsPos, "."); InsPos++;
+                                    TokenIns(InsPos, "length"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+
+                                    TokenIns(InsPos, "for"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "let"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, FetchVar3); InsPos++;
+                                    TokenIns(InsPos, "="); InsPos++;
+                                    TokenIns(InsPos, "0"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+                                    TokenIns(InsPos, FetchVar3); InsPos++;
+                                    TokenIns(InsPos, "<"); InsPos++;
+                                    TokenIns(InsPos, FetchVar2); InsPos++;
+                                    TokenIns(InsPos, "."); InsPos++;
+                                    TokenIns(InsPos, "length"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+                                    TokenIns(InsPos, FetchVar3); InsPos++;
+                                    TokenIns(InsPos, "+"); InsPos++;
+                                    TokenIns(InsPos, "+"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, "{"); InsPos++;
+                                    TokenIns(InsPos, FetchVar1); InsPos++;
+                                    TokenIns(InsPos, "["); InsPos++;
+                                    TokenIns(InsPos, FetchVar3); InsPos++;
+                                    TokenIns(InsPos, "]"); InsPos++;
+                                    TokenIns(InsPos, "="); InsPos++;
+                                    TokenIns(InsPos, FetchVar2); InsPos++;
+                                    TokenIns(InsPos, "."); InsPos++;
+                                    TokenIns(InsPos, "charCodeAt"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, FetchVar3); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+                                    TokenIns(InsPos, "}"); InsPos++;
+
+                                    TokenIns(InsPos, FetchPar1); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Response"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Blob"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "["); InsPos++;
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Uint8Array"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, FetchVar1); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, "]"); InsPos++;
+                                    TokenIns(InsPos, ","); InsPos++;
+                                    TokenIns(InsPos, "{"); InsPos++;
+                                    TokenIns(InsPos, "type"); InsPos++;
+                                    TokenIns(InsPos, ":"); InsPos++;
+                                    TokenIns(InsPos, "\"\""); InsPos++;
+                                    TokenIns(InsPos, "}"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ";"); InsPos++;
+
+                                    TokenIns(InsPos, "}"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                }
+                                Child[I].IsBundled = true;
+                            }
+                        }
+                        break;
                 }
             }
         }
 
 
-        public override void Parse(int Depth, string Name)
+        public override void Parse()
         {
-            base.Parse(Depth, Name);
+            base.Parse();
 
             char C = ' ';
             string TokenBuf = "";
@@ -427,10 +627,12 @@ namespace SingleHtmlAppBundler
 
             if (PrintTokenList)
             {
+                Console.WriteLine("Token list - " + FileName + " - START");
                 for (int I = 0; I < TokenV.Count; I++)
                 {
                     Console.WriteLine(I + "____" + TokenV[I] + "____" + TokenT[I]);
                 }
+                Console.WriteLine("Token list - " + FileName + " - STOP");
             }
 
             TokenWorkV.Clear();
@@ -535,12 +737,11 @@ namespace SingleHtmlAppBundler
                         FileNameFound = FileNameFound.Substring(1, FileNameFound.Length - 2);
                         if (CoreFile.ValidFileName(Core.BaseDirI, FileNameFound) >= 0)
                         {
-                            string ScriptText = CoreFile.GetFileS(Core.BaseDirI, FileNameFound);
-                            AppObj AppObj_ = new AppObjJS(ScriptText, this);
+                            AppObj AppObj_ = new AppObjJS("JS:import", Depth + 1, FileNameFound, CoreFile.GetFileS(Core.BaseDirI, FileNameFound), this);
                             Child.Add(AppObj_);
                             ChildName.Add(FileNameFound);
                             ChildPtr.Add(TokenWorkN[I]);
-                            AppObj_.Parse(Depth + 1, FileNameFound);
+                            AppObj_.Parse();
                         }
                     }
                 }
@@ -558,12 +759,11 @@ namespace SingleHtmlAppBundler
                                 FileNameFound = FileNameFound.Substring(1, FileNameFound.Length - 2);
                                 if (CoreFile.ValidFileName(Core.BaseDirI, FileNameFound) >= 0)
                                 {
-                                    string ScriptText = CoreFile.GetFileS(Core.BaseDirI, FileNameFound);
-                                    AppObj AppObj_ = new AppObjJS(ScriptText, this);
+                                    AppObj AppObj_ = new AppObjJS("JS:worker", Depth + 1, FileNameFound, CoreFile.GetFileS(Core.BaseDirI, FileNameFound), this);
                                     Child.Add(AppObj_);
                                     ChildName.Add(FileNameFound);
                                     ChildPtr.Add(TokenWorkN[I]);
-                                    AppObj_.Parse(Depth + 1, FileNameFound);
+                                    AppObj_.Parse();
                                 }
                             }
                         }
@@ -571,8 +771,10 @@ namespace SingleHtmlAppBundler
                 }
 
                 // Search for image CSS url
-                if ((TokenWorkT[I] == TokenTypeDef.Identifier) && (TokenWorkV[I] == "url"))
+                // Search for file fetch url
+                if ((TokenWorkT[I] == TokenTypeDef.Identifier) && ((TokenWorkV[I] == "url") || (TokenWorkV[I] == "fetch")))
                 {
+                    string TagName = TokenWorkV[I];
                     if ((TokenWorkT[I + 1] == TokenTypeDef.Operator) && (TokenWorkV[I + 1] == "("))
                     {
                         string FileNameFound = null;
@@ -594,35 +796,13 @@ namespace SingleHtmlAppBundler
                                 }
                             }
                         }
-                        switch (CoreFile.ValidFileName(Core.BaseDirI, FileNameFound))
+                        AppObj AppObj_ = CreateAppObj("JS:" + TagName, Depth + 1, Core.BaseDirI, FileNameFound, this);
+                        if (AppObj_ != null)
                         {
-                            case 0: // Binary
-                                {
-                                    AppObj AppObj_ = new AppObjGraph(CoreFile.FilePath(Core.BaseDirI, FileNameFound), this);
-                                    Child.Add(AppObj_);
-                                    ChildName.Add(FileNameFound);
-                                    ChildPtr.Add(TokenWorkN[I]);
-                                    AppObj_.Parse(Depth + 1, FileNameFound);
-                                }
-                                break;
-                            case 1: // HTML
-                                {
-                                    AppObj AppObj_ = new AppObjHtml(CoreFile.FilePath(Core.BaseDirI, FileNameFound), this);
-                                    Child.Add(AppObj_);
-                                    ChildName.Add(FileNameFound);
-                                    ChildPtr.Add(TokenWorkN[I]);
-                                    AppObj_.Parse(Depth + 1, FileNameFound);
-                                }
-                                break;
-                            case 2: // JS, CSS
-                                {
-                                    AppObj AppObj_ = new AppObjJS(CoreFile.FilePath(Core.BaseDirI, FileNameFound), this);
-                                    Child.Add(AppObj_);
-                                    ChildName.Add(FileNameFound);
-                                    ChildPtr.Add(TokenWorkN[I]);
-                                    AppObj_.Parse(Depth + 1, FileNameFound);
-                                }
-                                break;
+                            Child.Add(AppObj_);
+                            ChildName.Add(FileNameFound);
+                            ChildPtr.Add(TokenWorkN[I]);
+                            AppObj_.Parse();
                         }
                     }
                 }
@@ -647,6 +827,36 @@ namespace SingleHtmlAppBundler
             {
                 TokenV.AddRange(Token);
                 TokenT.AddRange(Token_);
+            }
+        }
+
+        void TokenIns(int Pos, string Token)
+        {
+            if ("".Equals(Token))
+            {
+                return;
+            }
+            if (Token[0] == ' ')
+            {
+                TokenIns(Pos, Token, TokenTypeDef.Whitespace);
+            }
+            else
+            {
+                if ((ScriptCharsOperatorRegEx.IndexOf(Token) >= 0) || (ScriptCharsOperatorOther.IndexOf(Token) >= 0))
+                {
+                    TokenIns(Pos, Token, TokenTypeDef.Operator);
+                }
+                else
+                {
+                    if (Token[0] == '\"')
+                    {
+                        TokenIns(Pos, Token, TokenTypeDef.ValueQ2);
+                    }
+                    else
+                    {
+                        TokenIns(Pos, Token, TokenTypeDef.Identifier);
+                    }
+                }
             }
         }
 
@@ -782,6 +992,8 @@ namespace SingleHtmlAppBundler
             // Remove whitespaces
             if (Core.MinifyJS_Whitespace)
             {
+                bool UseEOL = true;
+
                 // Remove leading whitespace
                 if ((TokenToOutV.Count > 0) && (TokenToOutT[0] == TokenTypeDef.Whitespace))
                 {
@@ -797,13 +1009,28 @@ namespace SingleHtmlAppBundler
                 }
 
                 // Shrink or remove other whitespace
+                string NewLineOp = "})";
                 for (int I = 1; I < (TokenToOutV.Count - 1); I++)
                 {
                     if (TokenToOutT[I] == TokenTypeDef.Whitespace)
                     {
-                        TokenToOutV[I] = " ";
+                        if (UseEOL)
+                        {
+                            if (TokenToOutV[I].Contains('\r') || TokenToOutV[I].Contains('\n'))
+                            {
+                                TokenToOutV[I] = "\n";
+                            }
+                            else
+                            {
+                                TokenToOutV[I] = " ";
+                            }
+                        }
+                        else
+                        {
+                            TokenToOutV[I] = " ";
+                        }
 
-                        // Whitespace between comment ant something other is not necessary
+                        // Whitespace between comment and something other is not necessary
                         if ((TokenToOutT[I - 1] == TokenTypeDef.Comment2) || (TokenToOutT[I + 1] == TokenTypeDef.Comment2))
                         {
                             TokenToOutV[I] = "";
@@ -816,7 +1043,17 @@ namespace SingleHtmlAppBundler
                         }
                         if ((TokenToOutT[I - 1] == TokenTypeDef.Operator) && (TokenToOutT[I + 1] == TokenTypeDef.ValueNum))
                         {
-                            TokenToOutV[I] = "";
+                            if ("\n".Equals(TokenToOutV[I]))
+                            {
+                                if (!NewLineOp.Contains(TokenToOutV[I - 1]))
+                                {
+                                    TokenToOutV[I] = "";
+                                }
+                            }
+                            else
+                            {
+                                TokenToOutV[I] = "";
+                            }
                         }
 
                         // Whitespace between operators is not necessary

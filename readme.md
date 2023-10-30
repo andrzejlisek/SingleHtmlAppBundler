@@ -14,7 +14,7 @@ The HTML bundling can be very useful in cases, such as:
 
 # File types
 
-The file type must be distinguished th two aspects:
+The file type must be distinguished by two aspects:
 
 
 * Distinguish HTML, JS/CSS and other files while processing\. The JS and CSS files are treated as file of the same type\.
@@ -24,15 +24,15 @@ In the application directory, there is the **mime\.txt** text file, which define
 
 
 * File extension without dot character\.
-* MIME string\.
+* MIME string or asterisk for default\.\.
 * File type as following:
-  * 0 \- Binary file\.
+  * 0 \- Any data file\.
   * 1 \- HTML file\.
   * 2 \- JS or CSS file\.
 
-The definition with the asterisk character, determines the MIME string and file type for every file with extension, which is not listed in the **mime\.txt**\. The blank lines of **mime\.txt** and lines consisting less that three elements, are ignored\.
+The definition with the asterisk character, determines the MIME string and file type for every file with extension, which is not listed in the **mime\.txt**\. The blank lines of **mime\.txt** and lines consisting less that three elements, are ignored\. 
 
-There are defined the most common extensions\. You can add other extensions\.
+The HtmlAgilityPack defines the type for many popular extensions\. The type in **mime\.txt** overrides the default mime type for this extension\.\.
 
 # Application running
 
@@ -51,34 +51,102 @@ The further arguments are parameters from following:
 * **EncodingRead** \- integer number \- Encoding used for read all text files\.
 * **EncodingWrite** \- integer number \- Encoding used for write all text files\.
 * **XHtml** \- **0** or **1** \- Generate HTML file as XHTML\.
+* **MimeType** \- **0** or **1** \- Displays MIME type for provided extensions separated with comma\.
 
 If you run the application without arguments, there will be displayed all possible parameters with default value and available encoding list\.
 
 ## Bundling steps
 
-The **SingleHtmlAppBundler** performs thefollowing steps:
+The **SingleHtmlAppBundler** performs the following steps:
 
 
 * **Step 0** \- Print parameters with currently used values\.
-* **Step 1** \- Analyze provided file and create the dependency tree\. All HTML and JS files will be analyzed recursively\. The file tree will be printed\.
+* **Step 1** \- Analyze provided file and create the dependency tree\. All HTML and JS files will be analyzed recursively\.
 * **Step 2** \- Perform bundling starting from the tree leaves according parameters\.
-* **Step 3** \- Save necessary files in the output directory\. There will be savet the root file and only the files, which is not bundled\.
+* **Step 3** \- Save necessary files in the output directory\. There will be saved the root file and only the files, which is not bundled\. At this step, the file tree will be printed and saved files will be indicated by asterisk\.
 
 The **SingleHtmlAppBundler** assumes, that all input HTML/JS files are syntactically correct and not analyzes the syntax of the JS and CSS\.
 
 ## Execution examples
 
-Bundle with default parameters:
+Copy files without bundling and minifying:
 
 ```
 dotnet SingleHtmlAppBundler.dll InputDir/file.html OutputDir
 ```
 
-Do not bundle scripts and minify JS files:
+Bundle only scripts and minify JS files:
 
 ```
 dotnet SingleHtmlAppBundler.dll InputDir/file.html OutputDir BundleHtmlScript=1 MinifyJsComment=1 MinifyJsWhitespace=1
 ```
+
+## Text replace
+
+The **SingleHtmlAppBundler** assumes that any file name is explicity written\. In some cases, wspecially in scripts, the file name can be defined as string constant\. This application does not analyze the script control flow\. You can perform text replacement in any files\. For example, this file will not be embedded\.
+
+```
+const fileName = "somefile.js"
+Worker wrk = new Worker(FileName);
+```
+
+You can do replace from `Worker(FileName);` to `Worker("somefile.js");` and you will get this script, which is equivalend and the additional file can be bundled:
+
+```
+const fileName = "somefile.js"
+Worker wrk = new Worker("somefile.js");
+```
+
+The replacements can be define in additional text file, which defines the code preparation, so the replacement will be done an the text file load moment\. The file has triples of the parameters beginning from 1\.
+
+
+* **ReplaceXFile** \- The file name\.
+* **ReplaceXTextFrom** \- Text, which will be searched\.
+* **ReplaceXTo** \- Text, to which there will be replaced\.
+
+Instead of **X**, you have to place the replacement number\. Assuming, that mentioned example is the **script\.js** file, you have to define the first replacement:
+
+```
+Replace1File=script.js
+Replace1TextFrom=Worker(FileName);
+Replace1To=Worker("somefile.js");
+```
+
+In the **From** and **To** parts, you have to place the text encoded as one\-line string\. You can use the escape characters if the text is inside double quotes\. The same replacement can be written as following:
+
+```
+Replace1File=script.js
+Replace1TextFrom="Worker(FileName);"
+Replace1To="Worker(\"somefile.js\");"
+```
+
+When you want to define two replacements in one file and one replacement in another file, you can write following:
+
+```
+Replace1File=script.js
+Replace1TextFrom=Worker(wrk1);
+Replace1To=Worker("somefile1.js");
+
+Replace2File=script.js
+Replace2TextFrom=Worker(wrk2);
+Replace2To=Worker("somefile2.js");
+
+Replace3File=info.js
+Replace3TextFrom=fetch(infofile);
+Replace3To=fetch("info.txt");
+```
+
+The number of defined replacements will be automatically detected\. This type can be used for search or replace text occupying several lines or several leading/trailing spaces\. The special characters can be uded:
+
+| Character | Code in file |
+| --- | --- |
+| Backslack | \\\\ |
+| Double quote | \\" |
+| Single quote | \\' |
+| Carriage return | \\r |
+| Line feed | \\n |
+| Tabulator | \\t |
+| Vertical tab | \\v |
 
 # Html bundle
 
@@ -89,14 +157,14 @@ The HTML bundling is performed by analyzing the tags in the following table\. In
 | BundleHtmlBody | `body` | `background` | Page background image\. |
 | BundleHtmlScript | `script` | `src` | Script file\. |
 | BundleHtmlLink | `link` | `href` | Additional file \(style, icon\)\. If `rel`=`stylesheet`, the tag will be replace with `style` tag\. |
+| BundleHtmlIframe | `iframe` | `src` | Media or document inside frame\. |
 | BundleHtmlImg | `img` | `src` | Image file\. |
 | BundleHtmlAudio | `audio` | `src` | Audio file\. |
 | BundleHtmlVideo | `video` | `src` | Video file\. |
-| BundleHtmlSource | `source` | `src` or `srcset` | Alternative file for `picture`, `audio`, `video` tag, uses the `type` attribute to determine file type\. |
 | BundleHtmlTrack | `track` | `src` | Additional file for `audio` or `video` tag, uses the `type` attribute to determine file type\. |
-| BundleHtmlIframe | `iframe` | `src` | Media or document inside frame\. |
-| BundleHtmlEmbed | `embed` | `src` | Media or document inside frame, uses the `type` attribute to determine file type\. |
+| BundleHtmlSource | `source` | `src` or `srcset` | Alternative file for `picture`, `audio`, `video` tag, uses the `type` attribute to determine file type\. |
 | BundleHtmlObject | `object` | `data` | Media or document inside frame\. |
+| BundleHtmlEmbed | `embed` | `src` | Media or document inside frame, uses the `type` attribute to determine file type\. |
 
 ## File type and BASE64
 
@@ -139,6 +207,7 @@ Bundling JS/CSS involves the following elements:
 
 * **Url** \- binary file in style, comonly image used as background\.
 * **Worker** \- JavaScript Worker object, which commonly relates to other JavaScript file\.
+* **Fetch** \- JavaScript fetch data from other file\.
 
 Application assumes, that the file name is written directly\. The cases, where the file name is provided via constant or variable are very rare and the file must be changed manually before bundling\.
 
@@ -177,7 +246,30 @@ x = new Worker(jsfile);
 y = Worker("file2.js");
 ```
 
-The **SingleHtmlAppBundler** does not analyze the JavaScript semantics and the flow control, but creating the **Worker** object without the **new** token is not correct\.
+But, this example can be bundled, if you use the following replacement:
+
+```
+Replace1File=script.js
+Replace1TextFrom="x = new Worker(jsfile);"
+Replace1To="x = new Worker(\"file1.js\");"
+```
+
+The range of replacing text should be quite large for explicitly point single occurence, when you are using several workers\. The **SingleHtmlAppBundler** does not analyze the JavaScript semantics and the flow control, but creating the **Worker** object without the **new** token is not correct\.
+
+## JavaScript Fetch
+
+The Fetch function is used for get additional files\. The **SingleHtmlAppBundler** searches for just **fetch** token and searches for the file name\. The work is similar to JavaScript Worker\.
+
+## Alternative algorithms
+
+The bundling way in the **SingleHtmlAppBundler** are good in most cases, but the **Worker** and **Fetch** offers bundling using different algorithm, but the effect is the same\. There parameters **BundleJsWorker** **and BundleJsFetch** about the elements, are three values:
+
+
+* **0** \- Do not bundle\.
+* **1** \- Bundle using standard algorithm\.
+* **2** \- Bundle using alternative algorithm\.
+
+For other parameters, if you try the value **2**, there will be bundled using standard \(only implemented\) algorithm\.
 
 # Minification
 
@@ -193,7 +285,7 @@ The **SingleHtmlAppBundler** can minify the HTML and JS/CSS files\. The minifica
   * Whitespace between operator and value\.
   * Whitespace between operators when the operator after whitespace is not the `-`, which can represent the negative number literal\.
 
-By default, the minification will not be applied, but you can turn on minification using parameters described above\.
+By default, the minification will not be applied, but you can enable minification using parameters described above\.
 
 
 

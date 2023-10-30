@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SingleHtmlAppBundler
@@ -7,6 +8,8 @@ namespace SingleHtmlAppBundler
         public static Encoding WorkEncodingI = Encoding.UTF8;
         public static Encoding WorkEncodingO = Encoding.UTF8;
 
+        public static string CodePreparationFile = "";
+
         public static bool UseXHTML = false;
 
         public static bool MinifyHTML_Comment = false;
@@ -14,20 +17,21 @@ namespace SingleHtmlAppBundler
         public static bool MinifyJS_Comment = false;
         public static bool MinifyJS_Whitespace = false;
 
-        public static bool BundleHTML_Body = true;
-        public static bool BundleHTML_Img = true;
-        public static bool BundleHTML_Script = true;
-        public static bool BundleHTML_Link = true;
-        public static bool BundleHTML_Iframe = true;
-        public static bool BundleHTML_Embed = true;
-        public static bool BundleHTML_Source = true;
-        public static bool BundleHTML_Track = true;
-        public static bool BundleHTML_Object = true;
-        public static bool BundleHTML_Audio = true;
-        public static bool BundleHTML_Video = true;
+        public static bool BundleHTML_Body = false;
+        public static bool BundleHTML_Script = false;
+        public static bool BundleHTML_Link = false;
+        public static bool BundleHTML_Iframe = false;
+        public static bool BundleHTML_Img = false;
+        public static bool BundleHTML_Audio = false;
+        public static bool BundleHTML_Video = false;
+        public static bool BundleHTML_Source = false;
+        public static bool BundleHTML_Track = false;
+        public static bool BundleHTML_Object = false;
+        public static bool BundleHTML_Embed = false;
 
-        public static bool BundleJS_Worker = true;
-        public static bool BundleJS_Url = true;
+        public static bool BundleJS_Url = false;
+        public static int BundleJS_Worker = 0;
+        public static int BundleJS_Fetch = 0;
 
 
         public Core()
@@ -38,6 +42,34 @@ namespace SingleHtmlAppBundler
         public static string BaseDirI = "";
         public static string BaseDirO = "";
 
+
+        public void WriteMimes(string FileI_, string FileO_)
+        {
+            string[] ExtList = (FileI_ + "," + FileO_).Replace(";", ",").Split(',');
+            int ExtL = 0;
+            int TypeL = 0;
+            for (int I = 0; I < ExtList.Length; I++)
+            {
+                ExtL = Math.Max(ExtL, ExtList[I].Length);
+                TypeL = Math.Max(TypeL, CoreFile.FileMimeType("X." + ExtList[I]).Length);
+            }
+            for (int I = 0; I < ExtList.Length; I++)
+            {
+                Console.Write(ExtList[I].PadRight(ExtL));
+                Console.Write("  ");
+                Console.Write(CoreFile.FileMimeType("X." + ExtList[I]).PadRight(TypeL));
+                Console.Write("  ");
+                switch (CoreFile.FileMimeTypeNum("X." + ExtList[I]))
+                {
+                    case 0: Console.Write("Data"); break;
+                    case 1: Console.Write("HTML"); break;
+                    case 2: Console.Write("JS/CSS"); break;
+                }
+                Console.WriteLine();
+            }
+        }
+
+
         public void Start(string FileI_, string FileO_)
         {
             GlobalId.Clear();
@@ -46,22 +78,10 @@ namespace SingleHtmlAppBundler
             BaseDirO = FileO_;
             BaseDirI = Path.GetDirectoryName(FileI_);
 
-            switch (CoreFile.ValidFileName(BaseDirI, UserFileName))
+            AppObj AppObj_ = AppObj.CreateAppObj("ROOT", 0, BaseDirI, UserFileName, null);
+            if (AppObj_ != null)
             {
-                case 1:
-                    {
-                        string ScriptText = CoreFile.GetFileS(BaseDirI, UserFileName);
-                        AppObjHtml AppObjHtml_ = new AppObjHtml(ScriptText, null);
-                        AppObjHtml_.Process(0, BaseDirO, UserFileName);
-                    }
-                    break;
-                case 2:
-                    {
-                        string ScriptText = CoreFile.GetFileS(BaseDirI, UserFileName);
-                        AppObjJS AppObjJS_ = new AppObjJS(ScriptText, null);
-                        AppObjJS_.Process(0, BaseDirO, UserFileName);
-                    }
-                    break;
+                AppObj_.Process(BaseDirO);
             }
         }
 
