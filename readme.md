@@ -24,9 +24,9 @@ In the application directory, there is the **mime\.txt** text file, which define
 
 
 * File extension without dot character\.
-* MIME string or asterisk for default\.\.
+* MIME string or asterisk for default\.
 * File type as following:
-  * 0 \- Any data file\.
+  * 0 \- Binary file\.
   * 1 \- HTML file\.
   * 2 \- JS or CSS file\.
 
@@ -278,7 +278,7 @@ Bundling JS/CSS involves the following elements:
 
 * **Url** \- binary file in style, comonly image used as background\.
 * **Worker** \- JavaScript Worker or SharedWorker object, which commonly relates to other JavaScript file\.
-* **Fetch** \- JavaScript fetch data from other file\.
+* **Fetch** \- JavaScript fetch contents from other file\.
 
 Application assumes, that the file name is written directly\. The cases, where the file name is provided via constant or variable are very rare and the file must be changed manually before bundling\.
 
