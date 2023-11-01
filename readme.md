@@ -111,15 +111,15 @@ The replacements can be define in preparation text file, which defines the code 
 * **ReplaceXTextFrom** \- Text, which will be searched\.
 * **ReplaceXTextTo** \- Text, to which there will be replaced\.
 * **ReplaceXNumber** \- The number of replacement occurences as following:
-  * **0** \- Replace all occurences, default value\. Work only if** ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""**\.
+  * **0** \- Replace all occurences, default value\. Work only if **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""**\.
   * **Positive** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
-    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the first N occurences
-    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>"" **Insert text at the begin N times\.
-    * **ReplaceXTextFrom=""** and **ReplaceXTextTo="" **Delete the first N characters\.
+    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the first **N** occurences\.
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>""** \- Insert text at the begin **N** times\.
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo=""** \- Delete the first **N** characters\.
   * **Negative** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
-    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the last N occurences
-    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>"" **Append text at the end N times\.
-    * **ReplaceXTextFrom=""** and **ReplaceXTextTo="" **Delete the last N characters\.
+    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""** \- Replaces the last **N** occurences
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>""** \- Append text at the end **N** times\.
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo=""** \- Delete the last **N** characters\.
 * **ReplaceXOnSave** \- Do this replacement on file save instead of on file loading:
   * **0** \- Replace/insert/delete during loading text before processing \(default\)\.
   * **1** \- Replace/insert/delete during saving processed text to file or bundling to other file\.
