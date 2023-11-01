@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        background-image: url("media/framebg.png");
+        background-color: #ffffc0;
+      }
+    </style>
+  </head>
+  <body>
+    <span id="info"></span>
+    <script>
+      fetch("media/info.txt").then((response) => {
+          response.text().then((data) => {
+          document.getElementById("info").innerHTML = ("<pre>" + data + "</pre>");
+        });
+      }).catch((response) => {
+        document.getElementById("info").innerHTML = ("JavaScript fetch error");
+      });
+    </script>
+  </body>
+</html>
+

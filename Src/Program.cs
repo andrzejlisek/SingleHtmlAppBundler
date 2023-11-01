@@ -24,7 +24,9 @@ if (args.Length < 2)
     Console.WriteLine("BundleHtmlEmbed=0");
     Console.WriteLine("BundleJsUrl=0");
     Console.WriteLine("BundleJsWorker=0");
+    Console.WriteLine("BundleJsSharedWorker=0");
     Console.WriteLine("BundleJsFetch=0");
+    Console.WriteLine("BundleJsImportScripts=0");
     Console.WriteLine("MinifyHtmlComment=0");
     Console.WriteLine("MinifyHtmlWhitespace=0");
     Console.WriteLine("MinifyJsComment=0");
@@ -32,6 +34,7 @@ if (args.Length < 2)
     Console.WriteLine("EncodingRead=" + Encoding.UTF8.CodePage);
     Console.WriteLine("EncodingWrite=" + Encoding.UTF8.CodePage);
     Console.WriteLine("XHtml=0");
+    Console.WriteLine("MaxDepth=10");
     Console.WriteLine("MimeType=0");
     Console.WriteLine();
 
@@ -60,6 +63,8 @@ SingleHtmlAppBundler.Core Core_ = new SingleHtmlAppBundler.Core();
 
 bool MimeTypeMode = false;
 
+int ParseMaxDepth = 10;        
+
 string FileI = args[0];
 string FileO = args[1];
 for (int I = 2; I < args.Length; I++)
@@ -67,7 +72,6 @@ for (int I = 2; I < args.Length; I++)
     int ParamValuePos = args[I].IndexOf('=');
     if (ParamValuePos >= 0)
     {
-        try
         {
             bool ValB = false;
             int ValI = 0;
@@ -148,8 +152,14 @@ for (int I = 2; I < args.Length; I++)
                 case "BundleJsWorker":
                     SingleHtmlAppBundler.Core.BundleJS_Worker = ValI;
                     break;
+                case "BundleJsSharedWorker":
+                    SingleHtmlAppBundler.Core.BundleJS_SharedWorker = ValI;
+                    break;
                 case "BundleJsFetch":
                     SingleHtmlAppBundler.Core.BundleJS_Fetch = ValI;
+                    break;
+                case "BundleJsImportScripts":
+                    SingleHtmlAppBundler.Core.BundleJS_ImportScripts = ValI;
                     break;
                 case "MinifyHtmlComment":
                     SingleHtmlAppBundler.Core.MinifyHTML_Comment = ValB;
@@ -172,14 +182,13 @@ for (int I = 2; I < args.Length; I++)
                 case "EncodingWrite":
                     SingleHtmlAppBundler.Core.WorkEncodingO = SingleHtmlAppBundler.EncodingWork.EncodingFromName(ValS);
                     break;
+                case "MaxDepth":
+                    ParseMaxDepth = ValI;
+                    break;
                 case "MimeType":
                     MimeTypeMode = ValB;
                     break;
             }
-        }
-        catch
-        {
-              
         }
     }
 }
@@ -200,7 +209,9 @@ Console.WriteLine("BundleHtmlObject=" + (SingleHtmlAppBundler.Core.BundleHTML_Ob
 Console.WriteLine("BundleHtmlEmbed=" + (SingleHtmlAppBundler.Core.BundleHTML_Embed ? "1" : "0"));
 Console.WriteLine("BundleJsUrl=" + (SingleHtmlAppBundler.Core.BundleJS_Url ? "1" : "0"));
 Console.WriteLine("BundleJsWorker=" + SingleHtmlAppBundler.Core.BundleJS_Worker);
+Console.WriteLine("BundleJsSharedWorker=" + SingleHtmlAppBundler.Core.BundleJS_SharedWorker);
 Console.WriteLine("BundleJsFetch=" + SingleHtmlAppBundler.Core.BundleJS_Fetch);
+Console.WriteLine("BundleJsImportScripts=" + SingleHtmlAppBundler.Core.BundleJS_ImportScripts);
 Console.WriteLine("MinifyHtmlComment=" + (SingleHtmlAppBundler.Core.MinifyHTML_Comment ? "1" : "0"));
 Console.WriteLine("MinifyHtmlWhitespace=" + (SingleHtmlAppBundler.Core.MinifyHTML_Whitespace ? "1" : "0"));
 Console.WriteLine("MinifyJsComment=" + (SingleHtmlAppBundler.Core.MinifyJS_Comment ? "1" : "0"));
@@ -208,6 +219,7 @@ Console.WriteLine("MinifyJsWhitespace=" + (SingleHtmlAppBundler.Core.MinifyJS_Wh
 Console.WriteLine("EncodingRead=" + SingleHtmlAppBundler.Core.WorkEncodingI.CodePage);
 Console.WriteLine("EncodingWrite=" + SingleHtmlAppBundler.Core.WorkEncodingO.CodePage);
 Console.WriteLine("XHtml=" + (SingleHtmlAppBundler.Core.UseXHTML ? "1" : "0"));
+Console.WriteLine("MaxDepth=" + ParseMaxDepth);
 Console.WriteLine("MimeType=" + (MimeTypeMode ? "1" : "0"));
 Console.WriteLine();
 
@@ -218,5 +230,5 @@ if (MimeTypeMode)
 }
 else
 {
-    Core_.Start(FileI, FileO);
+    Core_.Start(FileI, FileO, ParseMaxDepth);
 }

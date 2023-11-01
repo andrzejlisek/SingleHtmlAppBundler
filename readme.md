@@ -51,7 +51,8 @@ The further arguments are parameters from following:
 * **EncodingRead** \- integer number \- Encoding used for read all text files\.
 * **EncodingWrite** \- integer number \- Encoding used for write all text files\.
 * **XHtml** \- **0** or **1** \- Generate HTML file as XHTML\.
-* **MimeType** \- **0** or **1** \- Displays MIME type for provided extensions separated with comma\.
+* **MaxDepth** \- integer number \- Maximum recurence depth within file tree building\.
+* **MimeType** \- **0** or **1** \- Displays MIME type for provided extensions separated with comma\. Described in **MIME types** chapter\.
 
 If you run the application without arguments, there will be displayed all possible parameters with default value and available encoding list\.
 
@@ -61,11 +62,11 @@ The **SingleHtmlAppBundler** performs the following steps:
 
 
 * **Step 0** \- Print parameters with currently used values\.
-* **Step 1** \- Analyze provided file and create the dependency tree\. All HTML and JS files will be analyzed recursively\.
+* **Step 1** \- Analyze provided file and create the dependency tree\. All HTML and JS files will be analyzed recursively, limited by **MaxDepth** parameter\.\.
 * **Step 2** \- Perform bundling starting from the tree leaves according parameters\.
 * **Step 3** \- Save necessary files in the output directory\. There will be saved the root file and only the files, which is not bundled\. At this step, the file tree will be printed and saved files will be indicated by asterisk\.
 
-The **SingleHtmlAppBundler** assumes, that all input HTML/JS files are syntactically correct and not analyzes the syntax of the JS and CSS\.
+The **SingleHtmlAppBundler** assumes, that all input HTML/JS files are syntactically correct and not analyzes the syntax of the JS and CSS\. The parameter **MaxDepth** avoids the application hangs if there are cycle references in files\.
 
 ## Execution examples
 
@@ -79,6 +80,12 @@ Bundle only scripts and minify JS files:
 
 ```
 dotnet SingleHtmlAppBundler.dll InputDir/file.html OutputDir BundleHtmlScript=1 MinifyJsComment=1 MinifyJsWhitespace=1
+```
+
+Bundle only scripts and workers, use **Prepare\.txt** preparation file:
+
+```
+dotnet SingleHtmlAppBundler.dll InputDir/file.html OutputDir BundleHtmlScript=1 BundleJsWorker=1 CodePreparationFile=Prepare.txt
 ```
 
 ## Text replace
@@ -97,43 +104,61 @@ const fileName = "somefile.js"
 Worker wrk = new Worker("somefile.js");
 ```
 
-The replacements can be define in additional text file, which defines the code preparation, so the replacement will be done an the text file load moment\. The file has triples of the parameters beginning from 1\.
+The replacements can be define in preparation text file, which defines the code preparation, so the replacement will be done an the text file load moment\. The file has bunch of the parameters beginning from **1**\.
 
 
 * **ReplaceXFile** \- The file name\.
 * **ReplaceXTextFrom** \- Text, which will be searched\.
-* **ReplaceXTo** \- Text, to which there will be replaced\.
+* **ReplaceXTextTo** \- Text, to which there will be replaced\.
+* **ReplaceXNumber** \- The number of replacement occurences as following:
+  * **0** \- Replace all occurences\. The default value\.
+  * **Positive** \- Replaces the first N occurences or insert text at the begin\.
+  * **Negative** \- Replaces the last N occurences or append text at the end\.
 
 Instead of **X**, you have to place the replacement number\. Assuming, that mentioned example is the **script\.js** file, you have to define the first replacement:
 
 ```
 Replace1File=script.js
 Replace1TextFrom=Worker(FileName);
-Replace1To=Worker("somefile.js");
+Replace1TextTo=Worker("somefile.js");
 ```
 
-In the **From** and **To** parts, you have to place the text encoded as one\-line string\. You can use the escape characters if the text is inside double quotes\. The same replacement can be written as following:
+In the **From** and **To** parts, you can place the text encoded as one\-line string\. You can use the escape characters if the text is inside double quotes\. The same replacement can be written as following:
 
 ```
 Replace1File=script.js
 Replace1TextFrom="Worker(FileName);"
-Replace1To="Worker(\"somefile.js\");"
+Replace1TextTo="Worker(\"somefile.js\");"
 ```
 
-When you want to define two replacements in one file and one replacement in another file, you can write following:
+If you want to add some additional text, the **ReplaceXTextFrom** must be blank and the **ReplaceXNumber** must be defined, for example:
+
+```
+Replace1File=index.html
+Replace1TextFrom=""
+Replace1TextTo="<!-- Additional header -->"
+Replace1Number=1
+
+Replace2File=index.html
+Replace2TextFrom=""
+Replace2TextTo="<!-- Additional footer -->"
+Replace2Number=-1
+```
+
+When you want to define two replacements in one file, one replacement in another file, you can write following:
 
 ```
 Replace1File=script.js
 Replace1TextFrom=Worker(wrk1);
-Replace1To=Worker("somefile1.js");
+Replace1TextTo=Worker("somefile1.js");
 
 Replace2File=script.js
 Replace2TextFrom=Worker(wrk2);
-Replace2To=Worker("somefile2.js");
+Replace2TextTo=Worker("somefile2.js");
 
 Replace3File=info.js
 Replace3TextFrom=fetch(infofile);
-Replace3To=fetch("info.txt");
+Replace3TextTo=fetch("info.txt");
 ```
 
 The number of defined replacements will be automatically detected\. This type can be used for search or replace text occupying several lines or several leading/trailing spaces\. The special characters can be uded:
@@ -147,6 +172,52 @@ The number of defined replacements will be automatically detected\. This type ca
 | Line feed | \\n |
 | Tabulator | \\t |
 | Vertical tab | \\v |
+
+## Cycle references
+
+Some HTML\+JavaScript projects can have cycle references between bunch of some files\. The file analysis depths is always limited by **MaxDepth** parameter\. In most such cases, the bundling is also possible under the following circumstances:
+
+
+* Using the code preparation file, use the text replacements to break these cycles\.
+* The bundling process may require several steps, each steps uses another code preparation file and other root file\.
+
+## File type force
+
+Generally, the file MIME type and data type \(binary, HTML, JS\) is detected by the file extension\. In some cases, the file extension can be incorrect, for example, the JavaScript file can have name **script\.js\.php** due to enforce to send additional HTTP headers defined inside the file, using PHP language, for example:
+
+```
+<?php
+header("Cross-Origin-Embedder-Policy: require-corp");
+header("Cross-Origin-Opener-Policy: same-origin");
+header("Content-Type: text/javascript");
+?>
+```
+
+The file will be treated as JavaScript file despite a different extension\. You can enforce desired type in preparation file using following triples:
+
+
+* **FileXName** \- File name
+* **FileXMime** \- File MIME text type
+* **FileXType** \- File type for **SingleHtmlAppBundler** as following:
+  * **0** \- Binary file\.
+  * **1** \- HTML file\.
+  * **2** \- JavaScript or CSS file\.
+
+In place of **X**, you have to place the number starting of **1**\. There is example for enforcing type for three files:
+
+```
+File1Name=index.php
+File1Mime=text/html
+File1Type=1
+
+File2Name=script.txt
+File2Mime=text/javascript
+File2Type=2
+
+File3Name=media/picture.bin
+File3Mime=image/jpeg
+File3Type=0
+```
 
 # Html bundle
 
@@ -206,7 +277,7 @@ Bundling JS/CSS involves the following elements:
 
 
 * **Url** \- binary file in style, comonly image used as background\.
-* **Worker** \- JavaScript Worker object, which commonly relates to other JavaScript file\.
+* **Worker** \- JavaScript Worker or SharedWorker object, which commonly relates to other JavaScript file\.
 * **Fetch** \- JavaScript fetch data from other file\.
 
 Application assumes, that the file name is written directly\. The cases, where the file name is provided via constant or variable are very rare and the file must be changed manually before bundling\.
@@ -225,11 +296,11 @@ Url('media/background.png')
 Url(media/background.png)
 ```
 
-## JavaScript Worker
+## JavaScript Worker, SharedWorker, importScripts
 
-The Worker object usually is constructed by providing other JavaScript file\. Bundler creates the fake JavaScript function containing the contents of provided file and creates the blob from the function\.
+The Worker object or SharedWorker object usually is constructed by providing other JavaScript file\. Bundler creates the fake JavaScript function containing the contents of provided file and creates the blob from the function\.
 
-There can be bundled every **Worker** token occurence, which is the preceded by **new** token and followef by bracket open and directly provided file name\.
+There can be bundled every **Worker** or **SharedWorker** token occurence, which is the preceded by **new** token and followef by bracket open and directly provided file name\. The **importScripts** token is always without the **new** token and can contain several URLs at once\.
 
 In such cases, the **Worker** can be bundled:
 
@@ -238,7 +309,7 @@ x = new Worker("file1.js");
 y = new Worker('file2.js');
 ```
 
-In the examples, the Worked can not be bundled:
+In the examples, the **Worked** can not be bundled:
 
 ```
 const jsfile = "file1.js";
@@ -258,16 +329,18 @@ The range of replacing text should be quite large for explicitly point single oc
 
 ## JavaScript Fetch
 
-The Fetch function is used for get additional files\. The **SingleHtmlAppBundler** searches for just **fetch** token and searches for the file name\. The work is similar to JavaScript Worker\.
+The **fetch** function is used for get additional files\. The **SingleHtmlAppBundler** searches for just **fetch** token and searches for the file name\. The work is similar to JavaScript Worker\.
 
 ## Alternative algorithms
 
-The bundling way in the **SingleHtmlAppBundler** are good in most cases, but the **Worker** and **Fetch** offers bundling using different algorithm, but the effect is the same\. There parameters **BundleJsWorker** **and BundleJsFetch** about the elements, are three values:
+The bundling way in the **SingleHtmlAppBundler** are good in most cases, but the **Worker**, **SharedWorker**, **importScripts** and **fetch** offers bundling using different algorithm, but the effect is the same\. There parameters for appropriate parameters can be as following:
 
 
 * **0** \- Do not bundle\.
-* **1** \- Bundle using standard algorithm\.
-* **2** \- Bundle using alternative algorithm\.
+* **1** \- Use **data:mimetype;base64,data** URL form\.
+* **2** \- Depends on parameter:
+  * **BundleJsWorker**, **BundleJsSharedWorker**, **BundleJsImportScripts** \- use **Blob** object created from text\.
+  * **BundleJsFetch** \- Replace the **fetch** function with anonymous function creating the **Response** object directly\.
 
 For other parameters, if you try the value **2**, there will be bundled using standard \(only implemented\) algorithm\.
 
@@ -286,6 +359,29 @@ The **SingleHtmlAppBundler** can minify the HTML and JS/CSS files\. The minifica
   * Whitespace between operators when the operator after whitespace is not the `-`, which can represent the negative number literal\.
 
 By default, the minification will not be applied, but you can enable minification using parameters described above\.
+
+# MIME types
+
+You can print the MIME types for specified extension using definitions inside HtmlAgilityPack library and in the **mime\.txt** file\.
+
+You have to specify file extensions or \* both in place of input file and output directory\. These followin examples gives exactly the same result:
+
+```
+dotnet SingleHtmlAppBundler.dll html,htm,jpg,gif,png css,js,* MimeType=1
+dotnet SingleHtmlAppBundler.dll html,htm jpg,gif,png,css,js,* MimeType=1
+dotnet SingleHtmlAppBundler.dll html,htm,jpg,gif,png,css,js * MimeType=1
+```
+
+This calls is incorrect:
+
+```
+dotnet SingleHtmlAppBundler.dll txt MimeType=1
+dotnet SingleHtmlAppBundler.dll * MimeType=1
+dotnet SingleHtmlAppBundler.dll txt,* MimeType=1
+dotnet SingleHtmlAppBundler.dll txt,js MimeType=1
+```
+
+For check single extension, just add any additional extension\. The parameters being **param=value** must be from a third command argument\.
 
 
 

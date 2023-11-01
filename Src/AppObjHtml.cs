@@ -44,15 +44,20 @@ namespace SingleHtmlAppBundler
 
         List<HtmlNode> ChildNode = new List<HtmlNode>();
 
-        public override void Parse()
+        public override void Parse(int MaxDepth)
         {
-            base.Parse();
+            base.Parse(MaxDepth);
+            if (MaxDepth == 0)
+            {
+                Console.WriteLine("The depth limit is reached, the " + FileName + " will not be analyzed.");
+                return;
+            }
             HDoc = new HtmlDocument();
             HDoc.LoadHtml(Raw);
-            ParseWork(HDoc.DocumentNode, 0);
+            ParseWork(HDoc.DocumentNode, 0, MaxDepth);
         }
 
-        void ParseWork(HtmlAgilityPack.HtmlNode N, int TextMode)
+        void ParseWork(HtmlAgilityPack.HtmlNode N, int TextMode, int MaxDepth)
         {
             string NodeFileName = null;
             string TagName = "???";
@@ -61,7 +66,7 @@ namespace SingleHtmlAppBundler
                 case HtmlAgilityPack.HtmlNodeType.Document:
                     for (int i = 0; i < N.ChildNodes.Count; i++)
                     {
-                        ParseWork(N.ChildNodes[i], 0);
+                        ParseWork(N.ChildNodes[i], 0, MaxDepth);
                     }
                     break;
                 case HtmlAgilityPack.HtmlNodeType.Element:
@@ -146,9 +151,8 @@ namespace SingleHtmlAppBundler
                                     TagName = N.ParentNode.Name;
                                     AppObj AppObj_ = new AppObjJS("HTML:" + TagName, Depth + 1, "", Txt, null);
                                     Child.Add(AppObj_);
-                                    ChildName.Add(null);
                                     ChildNode.Add(N);
-                                    AppObj_.Parse();
+                                    AppObj_.Parse(MaxDepth - 1);
                                 }
                             }
                             break;
@@ -164,9 +168,8 @@ namespace SingleHtmlAppBundler
                 if (AppObj_ != null)
                 {
                     Child.Add(AppObj_);
-                    ChildName.Add(NodeFileName);
                     ChildNode.Add(N);
-                    AppObj_.Parse();
+                    AppObj_.Parse(MaxDepth - 1);
                 }
             }
 
@@ -178,7 +181,7 @@ namespace SingleHtmlAppBundler
                     {
                         for (int i = 0; i < N.ChildNodes.Count; i++)
                         {
-                            ParseWork(N.ChildNodes[i], 0);
+                            ParseWork(N.ChildNodes[i], 0, MaxDepth);
                         }
                     }
                 }
@@ -203,21 +206,21 @@ namespace SingleHtmlAppBundler
                     case "body":
                         if (Core.BundleHTML_Body)
                         {
-                            ChildNode[I].Attributes["background"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["background"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
                     case "img":
                         if (Core.BundleHTML_Img)
                         {
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
                     case "iframe":
                         if (Core.BundleHTML_Iframe)
                         {
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
@@ -229,7 +232,7 @@ namespace SingleHtmlAppBundler
                             {
                                 T = ChildNode[I].Attributes["type"].Value;
                             }
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], T);
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(T);
                             Child[I].IsBundled = true;
                         }
                         break;
@@ -243,12 +246,12 @@ namespace SingleHtmlAppBundler
                             }
                             if ((ChildNode[I].Attributes["srcset"] != null) && (ChildNode[I].Attributes["src"] == null))
                             {
-                                ChildNode[I].Attributes["srcset"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], T);
+                                ChildNode[I].Attributes["srcset"].Value = Child[I].GetProcessedRawBASE64(T);
                                 Child[I].IsBundled = true;
                             }
                             if (ChildNode[I].Attributes["src"] != null)
                             {
-                                ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], T);
+                                ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(T);
                                 Child[I].IsBundled = true;
                             }
                         }
@@ -261,28 +264,28 @@ namespace SingleHtmlAppBundler
                             {
                                 T = ChildNode[I].Attributes["type"].Value;
                             }
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], T);
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(T);
                             Child[I].IsBundled = true;
                         }
                         break;
                     case "object":
                         if (Core.BundleHTML_Object)
                         {
-                            ChildNode[I].Attributes["data"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["data"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
                     case "audio":
                         if (Core.BundleHTML_Audio)
                         {
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
                     case "video":
                         if (Core.BundleHTML_Video)
                         {
-                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                            ChildNode[I].Attributes["src"].Value = Child[I].GetProcessedRawBASE64("");
                             Child[I].IsBundled = true;
                         }
                         break;
@@ -323,7 +326,7 @@ namespace SingleHtmlAppBundler
                                 }
                                 else
                                 {
-                                    ChildNode[I].Attributes["href"].Value = Child[I].GetProcessedRawBASE64(ChildName[I], "");
+                                    ChildNode[I].Attributes["href"].Value = Child[I].GetProcessedRawBASE64("");
                                 }
                                 Child[I].IsBundled = true;
                             }

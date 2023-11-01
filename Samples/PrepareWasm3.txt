@@ -1,0 +1,13 @@
+Replace1File=wasmtest1.js
+Replace1TextFrom="fetch(binaryFile,"
+Replace1TextTo="fetch(\"wasmtest1.wasm\","
+
+Replace2File=wasmtest1.js
+Replace2TextFrom="Worker(pthreadMainJs"
+Replace2TextTo="Worker(\"_bundled_wasmtest1.worker.js\""
+
+Replace3File=wasmtest1.html
+Replace3TextFrom=""
+Replace3TextTo="<?php header("Cross-Origin-Embedder-Policy: require-corp"); header("Cross-Origin-Opener-Policy: same-origin"); ?>\n"
+Replace3Number=1
+

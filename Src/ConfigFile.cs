@@ -35,29 +35,36 @@ namespace SingleHtmlAppBundler
         public static string MultilineDecode(string X)
         {
             string XXX = "";
-            if ((X[0] == '\"') && (X[X.Length - 1] == '\"'))
+            if (X.Length >= 2)
             {
-                for (int I = 1; I < (X.Length - 1); I++)
+                if ((X[0] == '\"') && (X[X.Length - 1] == '\"'))
                 {
-                    char C = X[I];
-                    if (C == '\\')
+                    for (int I = 1; I < (X.Length - 1); I++)
                     {
-                        I++;
-                        C = X[I];
-                        if (C == '\\') { XXX += "\\"; }
-                        if (C == '\"') { XXX += "\""; }
-                        if (C == '\'') { XXX += "\'"; }
-                        if (C == 'r') { XXX += "\r"; }
-                        if (C == 'n') { XXX += "\n"; }
-                        if (C == 't') { XXX += "\t"; }
-                        if (C == 'v') { XXX += "\v"; }
+                        char C = X[I];
+                        if (C == '\\')
+                        {
+                            I++;
+                            C = X[I];
+                            if (C == '\\') { XXX += "\\"; }
+                            if (C == '\"') { XXX += "\""; }
+                            if (C == '\'') { XXX += "\'"; }
+                            if (C == 'r') { XXX += "\r"; }
+                            if (C == 'n') { XXX += "\n"; }
+                            if (C == 't') { XXX += "\t"; }
+                            if (C == 'v') { XXX += "\v"; }
+                        }
+                        else
+                        {
+                            XXX += C;
+                        }
                     }
-                    else
-                    {
-                        XXX += C;
-                    }
+                    return XXX;
                 }
-                return XXX;
+                else
+                {
+                    return X;
+                }
             }
             else
             {

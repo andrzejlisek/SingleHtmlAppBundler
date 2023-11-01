@@ -1,0 +1,4 @@
+Replace1File=wasmtest1.worker.js
+Replace1TextFrom="importScripts(e.data.urlOrBlob)"
+Replace1TextTo="importScripts(\"wasmtest1.js\")"
+

@@ -58,102 +58,48 @@ namespace SingleHtmlAppBundler
                         }
                         break;
                     case "Worker":
+                    case "SharedWorker":
+                    case "importScripts":
                         {
-                            if ((Core.BundleJS_Worker == 1) || (Core.BundleJS_Worker == 2))
+                            // 1 - set BASE64 data as URL
+                            // 2 - set text as URL object
+                            int BundleType = 0;
+                            switch (TokenV[TokenPos])
                             {
-                                // 1 - Additional function in child file
-                                // 2 - Embedded Worker as function
-                                // 3 - Embedded Worker as raw text
-                                // 4 - Embed Worker as BASE64
-                                int JSWorkerBundleMode = 3;
-
-                                if (Core.BundleJS_Worker == 2)
+                                case "Worker": BundleType = Core.BundleJS_Worker; break;
+                                case "SharedWorker": BundleType = Core.BundleJS_SharedWorker; break;
+                                case "importScripts": BundleType = Core.BundleJS_ImportScripts; break;
+                            }
+                            if ((BundleType == 1) || (BundleType == 2))
+                            {
+                                InsPos = TokenPos + ChildOffset[I];
+                                TokenRem(InsPos);
+                                if (BundleType == 1)
                                 {
-                                    JSWorkerBundleMode = 4;
+                                    TokenIns(InsPos, "\"" + Child[I].GetProcessedRawBASE64("") + "\""); InsPos++;
                                 }
-
-                                string ObjId = GlobalId.NewId(ChildName[I], true);
-
-                                TokenPos++;
-                                while ((TokenT[TokenPos] == TokenTypeDef.Whitespace) || (TokenT[TokenPos] == TokenTypeDef.Operator) || (TokenT[TokenPos] == TokenTypeDef.Comment1) || (TokenT[TokenPos] == TokenTypeDef.Comment2))
+                                if (BundleType == 2)
                                 {
-                                    TokenPos++;
+                                    TokenIns(InsPos, "URL"); InsPos++;
+                                    TokenIns(InsPos, "."); InsPos++;
+                                    TokenIns(InsPos, "createObjectURL"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "new"); InsPos++;
+                                    TokenIns(InsPos, " "); InsPos++;
+                                    TokenIns(InsPos, "Blob"); InsPos++;
+                                    TokenIns(InsPos, "("); InsPos++;
+                                    TokenIns(InsPos, "["); InsPos++;
+                                    TokenIns(InsPos, ConfigFile.MultilineEncode(Child[I].GetProcessedRaw())); InsPos++;
+                                    TokenIns(InsPos, "]"); InsPos++;
+                                    TokenIns(InsPos, ","); InsPos++;
+                                    TokenIns(InsPos, "{"); InsPos++;
+                                    TokenIns(InsPos, "type"); InsPos++;
+                                    TokenIns(InsPos, ":"); InsPos++;
+                                    TokenIns(InsPos, ConfigFile.MultilineEncode(Child[I].FileMimeType)); InsPos++;
+                                    TokenIns(InsPos, "}"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
+                                    TokenIns(InsPos, ")"); InsPos++;
                                 }
-
-                                TokenRem(TokenPos);
-                                InsPos = TokenPos;
-                                if (JSWorkerBundleMode == 4)
-                                {
-                                    string ChildCode = ((AppObjJS)Child[I]).GetProcessedRaw();
-                                    TokenIns(InsPos, "\"data:text/javascript;base64," + Convert.ToBase64String(Core.WorkEncodingO.GetBytes(ChildCode)) + "\""); InsPos++;
-                                }
-                                if (JSWorkerBundleMode <= 3)
-                                {
-                                    TokenIns(InsPos, "URL", TokenTypeDef.Identifier); InsPos++;
-                                    TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "createObjectURL", TokenTypeDef.Identifier); InsPos++;
-                                    TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "new", TokenTypeDef.Identifier); InsPos++;
-                                    TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
-                                    TokenIns(InsPos, "Blob", TokenTypeDef.Identifier); InsPos++;
-                                    TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "[", TokenTypeDef.Operator); InsPos++;
-                                    if (JSWorkerBundleMode == 3)
-                                    {
-                                        string ChildCode = CodeToString(((AppObjJS)Child[I]).GetProcessedRaw());
-                                        TokenIns(InsPos, "\"" + ChildCode + "\""); InsPos++;
-                                    }
-                                    if (JSWorkerBundleMode < 3)
-                                    {
-                                        TokenIns(InsPos, "\"(\"", TokenTypeDef.ValueQ2); InsPos++;
-                                        TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
-                                        if (JSWorkerBundleMode == 1)
-                                        {
-                                            TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
-                                        }
-                                        if (JSWorkerBundleMode == 2)
-                                        {
-                                            AppObjJS ChildJS = ((AppObjJS)Child[I]);
-                                            TokenIns(InsPos, "function"); InsPos++;
-                                            TokenIns(InsPos, "("); InsPos++;
-                                            TokenIns(InsPos, ")"); InsPos++;
-                                            TokenIns(InsPos, "{"); InsPos++;
-                                            TokenIns(InsPos, ChildJS.TokenV, ChildJS.TokenT); InsPos += ChildJS.TokenV.Count;
-                                            TokenIns(InsPos, "}"); InsPos++;
-                                        }
-                                        TokenIns(InsPos, ".", TokenTypeDef.Operator); InsPos++;
-                                        TokenIns(InsPos, "toString", TokenTypeDef.Identifier); InsPos++;
-                                        TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                        TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                        TokenIns(InsPos, "+", TokenTypeDef.Operator); InsPos++;
-                                        TokenIns(InsPos, "\")()\"", TokenTypeDef.ValueQ2); InsPos++;
-                                    }
-                                    TokenIns(InsPos, "]", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, ",", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "type", TokenTypeDef.Identifier); InsPos++;
-                                    TokenIns(InsPos, ":", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, "\"text/javascript\"", TokenTypeDef.ValueQ2); InsPos++;
-                                    TokenIns(InsPos, "}", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                    TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                }
-
-                                if (JSWorkerBundleMode == 1)
-                                {
-                                    InsPos = 0;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "function", TokenTypeDef.Identifier); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, " ", TokenTypeDef.Whitespace); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, ObjId, TokenTypeDef.Identifier); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "(", TokenTypeDef.Operator); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, ")", TokenTypeDef.Operator); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenIns(InsPos, "{", TokenTypeDef.Operator); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenAdd("\n", TokenTypeDef.Whitespace); InsPos++;
-                                    ((AppObjJS)Child[I]).TokenAdd("}", TokenTypeDef.Operator); InsPos++;
-
-                                    TokenIns(0, ((AppObjJS)Child[I]).TokenV, ((AppObjJS)Child[I]).TokenT);
-                                }
-
                                 Child[I].IsBundled = true;
                             }
                         }
@@ -162,49 +108,50 @@ namespace SingleHtmlAppBundler
                         {
                             if (Core.BundleJS_Url)
                             {
-                                TokenPos++;
-                                TokenPos++;
-                                while (TokenV[TokenPos] != ")")
+                                if (ChildOffset[I] >= 0)
                                 {
-                                    TokenRem(TokenPos);
+                                    InsPos = TokenPos + ChildOffset[I];
+                                    TokenRem(InsPos);
                                 }
-                                TokenIns(TokenPos, "\"" + ((AppObjGraph)Child[I]).GetProcessedRaw() + "\"", TokenTypeDef.ValueQ2);
+                                else
+                                {
+                                    InsPos = TokenPos;
+                                    int N = 0 - ChildOffset[I] - 2;
+                                    while (TokenV[InsPos] != "(")
+                                    {
+                                        InsPos++;
+                                        N--;
+                                    }
+                                    InsPos++;
+                                    while (N > 0)
+                                    {
+                                        TokenRem(InsPos);
+                                        N--;
+                                    }
+                                }
+                                string RawBase64 = Child[I].GetProcessedRawBASE64("");
+                                TokenIns(InsPos, "\"" + RawBase64 + "\"");
                                 Child[I].IsBundled = true;
                             }
                         }
                         break;
                     case "fetch":
                         {
+                            // 1 - set BASE64 data as URL
+                            // 2 - replace fetch into building function
                             if ((Core.BundleJS_Fetch == 1) || (Core.BundleJS_Fetch == 2))
                             {
-                                // 1 - replace fetch into building function
-                                // 2 - set BASE64 data as URL
-                                int JSFetchBundleMode = 2;
+                                string RawBase64 = Child[I].GetProcessedRawBASE64("");
+
+                                InsPos = TokenPos + ChildOffset[I];
+
+                                if (Core.BundleJS_Fetch == 1)
+                                {
+                                    TokenRem(InsPos);
+                                    TokenIns(InsPos, "\"" + RawBase64 + "\"");
+                                }
 
                                 if (Core.BundleJS_Fetch == 2)
-                                {
-                                    JSFetchBundleMode = 1;
-                                }
-
-                                string RawBase64 = ((AppObjGraph)Child[I]).GetProcessedRaw();
-
-                                if (JSFetchBundleMode == 2)
-                                {
-                                    InsPos = TokenPos;
-                                    while (TokenV[InsPos] != ")")
-                                    {
-                                        if ((TokenT[InsPos] == TokenTypeDef.ValueQ1) || (TokenT[InsPos] == TokenTypeDef.ValueQ2))
-                                        {
-                                            TokenRem(InsPos);
-                                            TokenIns(InsPos, "\"" + RawBase64 + "\"");
-                                            break;
-                                        }
-                                        InsPos++;
-                                    }
-                                }
-
-
-                                if (JSFetchBundleMode == 1)
                                 {
                                     TokenRem(TokenPos);
                                     TokenPos++;
@@ -308,7 +255,7 @@ namespace SingleHtmlAppBundler
                                     TokenIns(InsPos, "{"); InsPos++;
                                     TokenIns(InsPos, "type"); InsPos++;
                                     TokenIns(InsPos, ":"); InsPos++;
-                                    TokenIns(InsPos, "\"\""); InsPos++;
+                                    TokenIns(InsPos, "\"" + Child[I].FileMimeType + "\""); InsPos++;
                                     TokenIns(InsPos, "}"); InsPos++;
                                     TokenIns(InsPos, ")"); InsPos++;
                                     TokenIns(InsPos, ")"); InsPos++;
@@ -327,9 +274,14 @@ namespace SingleHtmlAppBundler
         }
 
 
-        public override void Parse()
+        public override void Parse(int MaxDepth)
         {
-            base.Parse();
+            base.Parse(MaxDepth);
+            if (MaxDepth == 0)
+            {
+                Console.WriteLine("The depth limit is reached, the " + FileName + " will not be analyzed.");
+                return;
+            }
 
             char C = ' ';
             string TokenBuf = "";
@@ -692,6 +644,7 @@ namespace SingleHtmlAppBundler
                     string FileNameFound = null;
                     int II = I + 1;
                     bool ImportPossible = true;
+                    int I_ = 0;
                     if ((TokenWorkT[II] == TokenTypeDef.Operator) && (TokenWorkV[II] == "{"))
                     {
                         while (ImportPossible)
@@ -715,6 +668,7 @@ namespace SingleHtmlAppBundler
                                     if ((TokenWorkT[II] == TokenTypeDef.ValueQ1) || (TokenWorkT[II] == TokenTypeDef.ValueQ2))
                                     {
                                         FileNameFound = TokenWorkV[II];
+                                        I_ = II;
                                     }
                                 }
                             }
@@ -729,6 +683,7 @@ namespace SingleHtmlAppBundler
                             {
                                 II++;
                                 FileNameFound = TokenWorkV[II];
+                                I_ = II;
                             }
                         }
                     }
@@ -739,70 +694,102 @@ namespace SingleHtmlAppBundler
                         {
                             AppObj AppObj_ = new AppObjJS("JS:import", Depth + 1, FileNameFound, CoreFile.GetFileS(Core.BaseDirI, FileNameFound), this);
                             Child.Add(AppObj_);
-                            ChildName.Add(FileNameFound);
                             ChildPtr.Add(TokenWorkN[I]);
-                            AppObj_.Parse();
+                            ChildOffset.Add(TokenWorkN[I_] - TokenWorkN[I]);
+                            AppObj_.Parse(MaxDepth - 1);
                         }
                     }
                 }
 
                 // Search for Worker objects
-                if ((TokenWorkT[I] == TokenTypeDef.Identifier) && (TokenWorkV[I] == "Worker"))
-                {
-                    if ((TokenWorkT[I - 1] == TokenTypeDef.Identifier) && (TokenWorkV[I - 1] == "new"))
-                    {
-                        if ((TokenWorkT[I + 1] == TokenTypeDef.Operator) && (TokenWorkV[I + 1] == "("))
-                        {
-                            if ((TokenWorkT[I + 2] == TokenTypeDef.ValueQ1) || (TokenWorkT[I + 2] == TokenTypeDef.ValueQ2))
-                            {
-                                string FileNameFound = TokenWorkV[I + 2];
-                                FileNameFound = FileNameFound.Substring(1, FileNameFound.Length - 2);
-                                if (CoreFile.ValidFileName(Core.BaseDirI, FileNameFound) >= 0)
-                                {
-                                    AppObj AppObj_ = new AppObjJS("JS:worker", Depth + 1, FileNameFound, CoreFile.GetFileS(Core.BaseDirI, FileNameFound), this);
-                                    Child.Add(AppObj_);
-                                    ChildName.Add(FileNameFound);
-                                    ChildPtr.Add(TokenWorkN[I]);
-                                    AppObj_.Parse();
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Search for image CSS url
                 // Search for file fetch url
-                if ((TokenWorkT[I] == TokenTypeDef.Identifier) && ((TokenWorkV[I] == "url") || (TokenWorkV[I] == "fetch")))
+                // Search for worker importScripts
+                if ((TokenWorkT[I] == TokenTypeDef.Identifier) && ((TokenWorkV[I] == "Worker") || (TokenWorkV[I] == "SharedWorker") || (TokenWorkV[I] == "url") || (TokenWorkV[I] == "fetch") || (TokenWorkV[I] == "importScripts")))
                 {
                     string TagName = TokenWorkV[I];
-                    if ((TokenWorkT[I + 1] == TokenTypeDef.Operator) && (TokenWorkV[I + 1] == "("))
+                    bool TagGood = true;
+                    bool UrlByTokens = false;
+                    if ("url".Equals(TagName))
                     {
-                        string FileNameFound = null;
-                        if ((TokenWorkT[I + 2] == TokenTypeDef.ValueQ1) || (TokenWorkT[I + 2] == TokenTypeDef.ValueQ2))
+                        UrlByTokens = true;
+                    }
+                    if ("Worker".Equals(TagName) || "SharedWorker".Equals(TagName))
+                    {
+                        TagGood = false;
+                        if ((TokenWorkT[I - 1] == TokenTypeDef.Identifier) && (TokenWorkV[I - 1] == "new"))
                         {
-                            FileNameFound = TokenWorkV[I + 2];
-                            FileNameFound = FileNameFound.Substring(1, FileNameFound.Length - 2);
+                            TagGood = true;
                         }
-                        else
+                    }
+                    if (TagGood && (TokenWorkT[I + 1] == TokenTypeDef.Operator) && (TokenWorkV[I + 1] == "("))
+                    {
+                        int TokenN = I + 2;
+                        int ArgDepth = 1;
+                        List<string> FileNameList = new List<string>();
+                        List<int> FileNamePos = new List<int>();
+                        string FileNameTok = "";
+                        while (ArgDepth > 0)
                         {
-                            if (TokenWorkT[I + 2] == TokenTypeDef.Identifier)
+                            bool Std = false;
+                            if (TokenWorkT[TokenN] == TokenTypeDef.Operator)
                             {
-                                FileNameFound = "";
-                                int TokenN = I + 2;
-                                while ((TokenWorkV[TokenN] != ")"))
+                                Std = true;
+                                switch (TokenWorkV[TokenN])
                                 {
-                                    FileNameFound = FileNameFound + TokenWorkV[TokenN];
-                                    TokenN++;
+                                    case "(":
+                                        ArgDepth++;
+                                        Std = false;
+                                        break;
+                                    case ")":
+                                        ArgDepth--;
+                                        Std = false;
+                                        break;
                                 }
                             }
+                            if ((TokenWorkT[TokenN] == TokenTypeDef.Identifier))
+                            {
+                                Std = true;
+                            }
+
+                            if ((TokenWorkT[TokenN] == TokenTypeDef.ValueQ1) || (TokenWorkT[TokenN] == TokenTypeDef.ValueQ2))
+                            {
+                                FileNameList.Add(ConfigFile.MultilineDecode(TokenWorkV[TokenN]));
+                                FileNamePos.Add(TokenN);
+                                UrlByTokens = false;
+                            }
+
+                            if (Std)
+                            {
+                                FileNameTok = FileNameTok + TokenWorkV[TokenN];
+                            }
+
+                            TokenN++;
                         }
-                        AppObj AppObj_ = CreateAppObj("JS:" + TagName, Depth + 1, Core.BaseDirI, FileNameFound, this);
-                        if (AppObj_ != null)
+
+                        if (UrlByTokens)
                         {
-                            Child.Add(AppObj_);
-                            ChildName.Add(FileNameFound);
-                            ChildPtr.Add(TokenWorkN[I]);
-                            AppObj_.Parse();
+                            FileNameList.Add(FileNameTok);
+                            FileNamePos.Add(TokenWorkN[I] - TokenWorkN[TokenN]);
+                        }
+
+                        for (int I0 = 0; I0 < FileNameList.Count; I0++)
+                        {
+                            AppObj AppObj_ = CreateAppObj("JS:" + TagName, Depth + 1, Core.BaseDirI, FileNameList[I0], this);
+                            if (AppObj_ != null)
+                            {
+                                Child.Add(AppObj_);
+                                ChildPtr.Add(TokenWorkN[I]);
+                                if (FileNamePos[I0] >= 0)
+                                {
+                                    ChildOffset.Add(TokenWorkN[FileNamePos[I0]] - TokenWorkN[I]);
+                                }
+                                else
+                                {
+                                    ChildOffset.Add(FileNamePos[I0]);
+                                }
+                                AppObj_.Parse(MaxDepth - 1);
+                            }
                         }
                     }
                 }
@@ -820,6 +807,13 @@ namespace SingleHtmlAppBundler
                     if (ChildPtr[I] >= Pos)
                     {
                         ChildPtr[I] += Token.Count;
+                    }
+                    else
+                    {
+                        if ((ChildPtr[I] + ChildOffset[I]) >= Pos)
+                        {
+                            ChildOffset[I] += Token.Count;
+                        }
                     }
                 }
             }
@@ -872,6 +866,13 @@ namespace SingleHtmlAppBundler
                     {
                         ChildPtr[I]++;
                     }
+                    else
+                    {
+                        if ((ChildPtr[I] + ChildOffset[I]) >= Pos)
+                        {
+                            ChildOffset[I]++;
+                        }
+                    }
                 }
             }
             else
@@ -890,6 +891,13 @@ namespace SingleHtmlAppBundler
                 if (ChildPtr[I] > Pos)
                 {
                     ChildPtr[I]--;
+                }
+                else
+                {
+                    if ((ChildPtr[I] + ChildOffset[I]) > Pos)
+                    {
+                        ChildOffset[I]--;
+                    }
                 }
             }
         }

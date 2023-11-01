@@ -1,0 +1,5 @@
+Information aquired
+
+by JavaScript "fetch" function.
+
+There is a plain text file.

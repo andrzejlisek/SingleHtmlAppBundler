@@ -25,7 +25,7 @@ namespace SingleHtmlAppBundler
             }
             if (File.Exists(Path.Combine(FileDir, FileName)))
             {
-                return FileMimeTypeNum(FileName);
+                return CodePreparation.GetPreparedMimeTypeNum(FileName);
             }
             return -1;
         }
@@ -54,13 +54,9 @@ namespace SingleHtmlAppBundler
             SetFile(Path.Combine(FileDir, FileName), Contents);
         }
 
-        public static void SetFile(string FilePath, string Contents)
-        {
-            SetFile(FilePath, Core.WorkEncodingO.GetBytes(Contents));
-        }
-
         public static void SetFile(string FileDir, string FileName, string Contents)
         {
+            Contents = CodePreparation.Prepare(FileName, Contents, true);
             SetFile(FileDir, FileName, Core.WorkEncodingO.GetBytes(Contents));
         }
 
@@ -102,7 +98,7 @@ namespace SingleHtmlAppBundler
                 }
                 Raw = Raw_;
             }
-            return CodePreparation.Prepare(FileName, Core.WorkEncodingI.GetString(Raw));
+            return CodePreparation.Prepare(FileName, Core.WorkEncodingI.GetString(Raw), false);
         }
 
         public static int FileMimeTypeNum(string FileName)

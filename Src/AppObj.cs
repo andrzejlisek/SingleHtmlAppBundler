@@ -10,18 +10,20 @@ namespace SingleHtmlAppBundler
         public int Depth;
         public string FileName = "";
         public string Raw = "";
+        public string FileMimeType = "";
+        public int FileMimeTypeN = 0;
         public bool IsBundled = false;
         public AppObj Parent = null;
         public List<AppObj> Child = new List<AppObj>();
-        public List<string> ChildName = new List<string>();
         public List<int> ChildPtr = new List<int>();
+        public List<int> ChildOffset = new List<int>();
 
         public static AppObj CreateAppObj(string TagInfo_, int Depth_, string FileDir_, string FileName_, AppObj Parent_)
         {
             switch (CoreFile.ValidFileName(Core.BaseDirI, FileName_))
             {
                 case 0: // Binary
-                    return new AppObjGraph(TagInfo_, Depth_, FileName_, CoreFile.FilePath(FileDir_, FileName_), Parent_);
+                    return new AppObjBinary(TagInfo_, Depth_, FileName_, CoreFile.FilePath(FileDir_, FileName_), Parent_);
                 case 1: // HTML
                     return new AppObjHtml(TagInfo_, Depth_, FileName_, CoreFile.GetFileS(FileDir_, FileName_), Parent_);
                 case 2: // JS, CSS
@@ -31,29 +33,20 @@ namespace SingleHtmlAppBundler
             }
         }
 
-        public static string CodeToString(string Code)
-        {
-            Code = Code.Replace("\\", "\\\\");
-            Code = Code.Replace("\r", "\\r");
-            Code = Code.Replace("\n", "\\n");
-            Code = Code.Replace("\t", "\\t");
-            Code = Code.Replace("\v", "\\v");
-            Code = Code.Replace("\"", "\\\"");
-            Code = Code.Replace("\'", "\\\'");
-            return Code;
-        }
 
         public AppObj(string TagInfo_, int Depth_, string FileName_, string Raw_, AppObj Parent_)
         {
             IsBundled = false;
-            TagInfo = TagInfo_.PadRight(15);
+            TagInfo = TagInfo_.PadRight(18);
             Depth = Depth_;
             FileName = FileName_;
             Raw = Raw_;
             Parent = Parent_;
+            FileMimeType = CodePreparation.GetPreparedMimeType(FileName);
+            FileMimeTypeN = CodePreparation.GetPreparedMimeTypeNum(FileName);
         }
 
-        public virtual void Parse()
+        public virtual void Parse(int MaxDepth)
         {
 
         }
@@ -75,18 +68,18 @@ namespace SingleHtmlAppBundler
 
         public void TreeInfo(AppObj N)
         {
-            string FileNameS = Core.StringNotEmpty(FileName) ? FileName : "<internal>";
-            string BundledS = IsBundled ? "" : " *";
-            Console.WriteLine(TagInfo + "".PadLeft(Depth * 4, ' ') + FileNameS + BundledS);
+            string FileNameS = Core.StringNotEmpty(FileName) ? (FileName + " - " + FileMimeType + " - " + FileMimeTypeN) : "<internal>";
+            string BundledS = IsBundled ? " " : "* ";
+            Console.WriteLine(TagInfo + BundledS + "".PadLeft(Depth * 2, ' ') + FileNameS);
             for (int I = 0; I < N.Child.Count; I++)
             {
                 N.Child[I].TreeInfo(N.Child[I]);
             }
         }
 
-        public string Process(string Dir)
+        public string Process(string Dir, int MaxDepth)
         {
-            Parse();
+            Parse(MaxDepth);
             TreeOperation(this);
             TreeInfo(this);
             SaveFiles(Dir);
@@ -98,13 +91,16 @@ namespace SingleHtmlAppBundler
             return Raw;
         }
 
-        public virtual string GetProcessedRawBASE64(string FileExt, string DefinedType)
+        public virtual string GetProcessedRawBASE64(string DefinedType)
         {
-            if (!Core.StringNotEmpty(DefinedType))
+            if (Core.StringNotEmpty(DefinedType))
             {
-                DefinedType = CoreFile.FileMimeType(FileExt);
+                return "data:" + DefinedType + ";base64," + Convert.ToBase64String(Core.WorkEncodingO.GetBytes(GetProcessedRaw()));
             }
-            return "data:" + DefinedType + ";base64," + Convert.ToBase64String(Core.WorkEncodingO.GetBytes(GetProcessedRaw()));
+            else
+            {
+                return "data:" + FileMimeType + ";base64," + Convert.ToBase64String(Core.WorkEncodingO.GetBytes(GetProcessedRaw()));
+            }
         }
 
         public void SaveFiles(string Dir)
@@ -113,13 +109,17 @@ namespace SingleHtmlAppBundler
             {
                 if (!IsBundled)
                 {
-                    if (this.GetType() == typeof(AppObjGraph))
+                    if (!Core.SavedFiles.Contains(Dir + "|" + FileName))
                     {
-                        ((AppObjGraph)this).BinSave(Dir, FileName);
-                    }
-                    else
-                    {
-                        CoreFile.SetFile(Dir, FileName, GetProcessedRaw());
+                        if (this.GetType() == typeof(AppObjBinary))
+                        {
+                            ((AppObjBinary)this).BinSave(Dir, FileName);
+                        }
+                        else
+                        {
+                            CoreFile.SetFile(Dir, FileName, GetProcessedRaw());
+                        }
+                        Core.SavedFiles.Add(Dir + "|" + FileName);
                     }
                 }
             }

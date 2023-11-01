@@ -31,7 +31,9 @@ namespace SingleHtmlAppBundler
 
         public static bool BundleJS_Url = false;
         public static int BundleJS_Worker = 0;
+        public static int BundleJS_SharedWorker = 0;
         public static int BundleJS_Fetch = 0;
+        public static int BundleJS_ImportScripts = 0;
 
 
         public Core()
@@ -61,16 +63,17 @@ namespace SingleHtmlAppBundler
                 Console.Write("  ");
                 switch (CoreFile.FileMimeTypeNum("X." + ExtList[I]))
                 {
-                    case 0: Console.Write("Data"); break;
+                    case 0: Console.Write("Binary"); break;
                     case 1: Console.Write("HTML"); break;
-                    case 2: Console.Write("JS/CSS"); break;
+                    case 2: Console.Write("JS or CSS"); break;
                 }
                 Console.WriteLine();
             }
         }
 
+        public static List<string> SavedFiles = new List<string>();
 
-        public void Start(string FileI_, string FileO_)
+        public void Start(string FileI_, string FileO_, int MaxDepth)
         {
             GlobalId.Clear();
 
@@ -81,7 +84,8 @@ namespace SingleHtmlAppBundler
             AppObj AppObj_ = AppObj.CreateAppObj("ROOT", 0, BaseDirI, UserFileName, null);
             if (AppObj_ != null)
             {
-                AppObj_.Process(BaseDirO);
+                SavedFiles.Clear();
+                AppObj_.Process(BaseDirO, MaxDepth);
             }
         }
 

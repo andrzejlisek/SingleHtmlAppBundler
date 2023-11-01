@@ -1,0 +1,4 @@
+Replace1File=wasmtest0.js
+Replace1TextFrom="fetch(binaryFile,"
+Replace1TextTo="fetch(\"wasmtest0.wasm\","
+
