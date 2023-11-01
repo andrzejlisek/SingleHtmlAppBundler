@@ -113,7 +113,7 @@ The replacements can be define in preparation text file, which defines the code 
 * **ReplaceXNumber** \- The number of replacement occurences as following:
   * **0** \- Replace all occurences, default value\. Work only if **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""**\.
   * **Positive** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
-    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the first **N** occurences\.
+    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""** \- Replaces the first **N** occurences\.
     * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>""** \- Insert text at the begin **N** times\.
     * **ReplaceXTextFrom=""** and **ReplaceXTextTo=""** \- Delete the first **N** characters\.
   * **Negative** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
