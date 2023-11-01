@@ -111,9 +111,18 @@ The replacements can be define in preparation text file, which defines the code 
 * **ReplaceXTextFrom** \- Text, which will be searched\.
 * **ReplaceXTextTo** \- Text, to which there will be replaced\.
 * **ReplaceXNumber** \- The number of replacement occurences as following:
-  * **0** \- Replace all occurences\. The default value\.
-  * **Positive** \- Replaces the first N occurences or insert text at the begin\.
-  * **Negative** \- Replaces the last N occurences or append text at the end\.
+  * **0** \- Replace all occurences, default value\. Work only if** ReplaceXTextFrom<>""** and **ReplaceXTextTo<>""**\.
+  * **Positive** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
+    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the first N occurences
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>"" **Insert text at the begin N times\.
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo="" **Delete the first N characters\.
+  * **Negative** \- Depends on **ReplaceXTextFrom** and **ReplaceXTextTo**:
+    * **ReplaceXTextFrom<>""** and **ReplaceXTextTo<>"" **\- Replaces the last N occurences
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo<>"" **Append text at the end N times\.
+    * **ReplaceXTextFrom=""** and **ReplaceXTextTo="" **Delete the last N characters\.
+* **ReplaceXOnSave** \- Do this replacement on file save instead of on file loading:
+  * **0** \- Replace/insert/delete during loading text before processing \(default\)\.
+  * **1** \- Replace/insert/delete during saving processed text to file or bundling to other file\.
 
 Instead of **X**, you have to place the replacement number\. Assuming, that mentioned example is the **script\.js** file, you have to define the first replacement:
 
@@ -131,30 +140,46 @@ Replace1TextFrom="Worker(FileName);"
 Replace1TextTo="Worker(\"somefile.js\");"
 ```
 
-If you want to add some additional text, the **ReplaceXTextFrom** must be blank and the **ReplaceXNumber** must be defined, for example:
+If you want to add some additional text, the **ReplaceXTextFrom** must be blank and the **ReplaceXNumber** must be defined, for example, add additional comments:
 
 ```
 Replace1File=index.html
 Replace1TextFrom=""
-Replace1TextTo="<!-- Additional header -->"
+Replace1TextTo="<!-- Additional header comment -->"
 Replace1Number=1
 
 Replace2File=index.html
 Replace2TextFrom=""
-Replace2TextTo="<!-- Additional footer -->"
+Replace2TextTo="<!-- Additional footer comment -->"
 Replace2Number=-1
 ```
 
-When you want to define two replacements in one file, one replacement in another file, you can write following:
+If you remofe the specified number of characters in file, both **ReplaceXTextFrom** and the **ReplaceXTextTo** must be blank, for example, delete first 100 characters and last 200 characters:
+
+```
+Replace1File=index.html
+Replace1TextFrom=""
+Replace1TextTo=""
+Replace1Number=100
+
+Replace2File=index.html
+Replace2TextFrom=""
+Replace2TextTo=""
+Replace2Number=-200
+```
+
+When you want to define two replacements in one file, one replacement in another file, you can write following for replace only the first and last occurence:
 
 ```
 Replace1File=script.js
 Replace1TextFrom=Worker(wrk1);
 Replace1TextTo=Worker("somefile1.js");
+Replace1Number=1
 
 Replace2File=script.js
 Replace2TextFrom=Worker(wrk2);
 Replace2TextTo=Worker("somefile2.js");
+Replace2Number=-1
 
 Replace3File=info.js
 Replace3TextFrom=fetch(infofile);

@@ -1084,7 +1084,7 @@ namespace SingleHtmlAppBundler
             {
                 Sb.Append(TokenToOutV[I]);
             }
-            return Sb.ToString();
+            return CodePreparation.Prepare(FileName, Sb.ToString(), true);
         }
     }
 }

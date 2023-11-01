@@ -56,7 +56,6 @@ namespace SingleHtmlAppBundler
 
         public static void SetFile(string FileDir, string FileName, string Contents)
         {
-            Contents = CodePreparation.Prepare(FileName, Contents, true);
             SetFile(FileDir, FileName, Core.WorkEncodingO.GetBytes(Contents));
         }
 
@@ -98,7 +97,7 @@ namespace SingleHtmlAppBundler
                 }
                 Raw = Raw_;
             }
-            return CodePreparation.Prepare(FileName, Core.WorkEncodingI.GetString(Raw), false);
+            return Core.WorkEncodingI.GetString(Raw);
         }
 
         public static int FileMimeTypeNum(string FileName)

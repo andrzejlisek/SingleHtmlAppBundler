@@ -193,7 +193,7 @@ namespace SingleHtmlAppBundler
         {
             StringBuilder SB = new StringBuilder();
             CreateHtmlText(SB, HDoc.DocumentNode, 0);
-            return SB.ToString();
+            return CodePreparation.Prepare(FileName, SB.ToString(), true);
         }
 
 

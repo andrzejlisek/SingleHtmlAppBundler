@@ -108,13 +108,15 @@ namespace SingleHtmlAppBundler
                             }
                             else
                             {
-                                if (N > 0)
+                                while (N > 0)
                                 {
                                     Code = ReplaceTo[FileName][I] + Code;
+                                    N--;
                                 }
-                                if (N < 0)
+                                while (N < 0)
                                 {
                                     Code = Code + ReplaceTo[FileName][I];
+                                    N++;
                                 }
                             }
                         }

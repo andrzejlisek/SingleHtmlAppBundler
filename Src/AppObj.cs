@@ -25,9 +25,9 @@ namespace SingleHtmlAppBundler
                 case 0: // Binary
                     return new AppObjBinary(TagInfo_, Depth_, FileName_, CoreFile.FilePath(FileDir_, FileName_), Parent_);
                 case 1: // HTML
-                    return new AppObjHtml(TagInfo_, Depth_, FileName_, CoreFile.GetFileS(FileDir_, FileName_), Parent_);
+                    return new AppObjHtml(TagInfo_, Depth_, FileName_, CodePreparation.Prepare(FileName_, CoreFile.GetFileS(FileDir_, FileName_), false), Parent_);
                 case 2: // JS, CSS
-                    return new AppObjJS(TagInfo_, Depth_, FileName_, CoreFile.GetFileS(FileDir_, FileName_), Parent_);
+                    return new AppObjJS(TagInfo_, Depth_, FileName_, CodePreparation.Prepare(FileName_, CoreFile.GetFileS(FileDir_, FileName_), false), Parent_);
                 default:
                     return null;
             }
@@ -88,7 +88,7 @@ namespace SingleHtmlAppBundler
 
         public virtual string GetProcessedRaw()
         {
-            return Raw;
+            return CodePreparation.Prepare(FileName, Raw, true);
         }
 
         public virtual string GetProcessedRawBASE64(string DefinedType)
