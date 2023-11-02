@@ -1,5 +1,4 @@
-function ImpTest()
-{
+function ImpTest() {
     return "works good";
 }
 

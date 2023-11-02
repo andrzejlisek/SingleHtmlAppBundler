@@ -69,7 +69,7 @@ namespace SingleHtmlAppBundler
         public void TreeInfo(AppObj N)
         {
             string FileNameS = Core.StringNotEmpty(FileName) ? (FileName + " - " + FileMimeType + " - " + FileMimeTypeN) : "<internal>";
-            string BundledS = IsBundled ? " " : "* ";
+            string BundledS = IsBundled ? "  " : "* ";
             Console.WriteLine(TagInfo + BundledS + "".PadLeft(Depth * 2, ' ') + FileNameS);
             for (int I = 0; I < N.Child.Count; I++)
             {

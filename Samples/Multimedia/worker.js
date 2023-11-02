@@ -1,4 +1,5 @@
-try { importScripts("import.js"); } catch { }
+let ImportError = "";
+try { importScripts("import.js"); } catch(E) { ImportError = E; }
 this.onmessage = function(M) {
     let Num1 = M.data[0];
     let Num2 = M.data[1];
@@ -14,7 +15,7 @@ this.onmessage = function(M) {
         Test = ImpTest();
     }
     if (Test != "works good") {
-        NumResult = NumResult + " - script import error";
+        NumResult = NumResult + " - script import error: " + ImportError;
     }
     postMessage(NumResult);
 }

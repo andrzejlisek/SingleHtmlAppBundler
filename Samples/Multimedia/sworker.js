@@ -1,4 +1,5 @@
-try { importScripts("import.js"); } catch { }
+let ImportError = "";
+try { importScripts("import.js"); } catch(E) { ImportError = E; }
 onconnect = function(e) {
     var port = e.ports[0];
     port.onmessage = function(M) {
@@ -25,7 +26,7 @@ onconnect = function(e) {
             Test = ImpTest();
         }
         if (Test != "works good") {
-            NumResult = NumResult + " - script import error";
+            NumResult = NumResult + " - script import error: " + ImportError;
         }
         port.postMessage(NumResult);
     };
