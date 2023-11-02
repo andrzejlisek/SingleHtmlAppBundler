@@ -1,3 +1,4 @@
+try { importScripts("import.js"); } catch { }
 onconnect = function(e) {
     var port = e.ports[0];
     port.onmessage = function(M) {
@@ -18,6 +19,13 @@ onconnect = function(e) {
         }
         else {
             NumResult = NumResult + "ERROR";
+        }
+        let Test = "X";
+        if (typeof ImpTest !== "undefined") {
+            Test = ImpTest();
+        }
+        if (Test != "works good") {
+            NumResult = NumResult + " - script import error";
         }
         port.postMessage(NumResult);
     };

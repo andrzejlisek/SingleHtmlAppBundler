@@ -1,5 +1,5 @@
-this.onmessage = function(M)
-{
+try { importScripts("import.js"); } catch { }
+this.onmessage = function(M) {
     let Num1 = M.data[0];
     let Num2 = M.data[1];
     let NumResult = Num1 + "*" + Num2 + "=" + (Num1 * Num2) + "; " + Num1 + "/" + Num2 + "=";
@@ -8,6 +8,13 @@ this.onmessage = function(M)
     }
     else {
         NumResult = NumResult + "ERROR";
+    }
+    let Test = "X";
+    if (typeof ImpTest !== "undefined") {
+        Test = ImpTest();
+    }
+    if (Test != "works good") {
+        NumResult = NumResult + " - script import error";
     }
     postMessage(NumResult);
 }
